@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingFeatureTempMapper">
+
+	<resultMap id="baseResultMap" type="com.jzhl.kfsq.entity.bm.BuildingFeatureTemp">
+		<id property="id" column="id" />
+		<result property="buildingId" column="buildingId" />
+		<result property="featureName" column="featureName" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="lastSynchronousTime" column="lastSynchronousTime" />
+		<result property="isSynchronous" column="isSynchronous" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<sql id="BaseColumns">
+		id,
+		buildingId,
+		featureName,
+		createTime,
+		updateTime,
+		lastSynchronousTime,
+		isSynchronous,
+		isValid
+	</sql>
+
+	<insert id="insertBuildingFeatureTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeatureTemp" useGeneratedKeys="true" keyProperty="buildingId">
+		insert into BM_BuildingFeatureTemp 
+		(
+			buildingId,
+			featureName,
+			createTime
+		)
+		values
+		(
+			#{buildingId},
+			#{featureName},
+			now()
+		)
+	</insert>
+	
+	<select id="findBuildingFeatureTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeatureTemp" resultMap="baseResultMap">
+		select 
+		<include refid="BaseColumns" />
+		from 
+		BM_BuildingFeatureTemp 
+		where
+		buildingId = #{buildingId}
+		<if test="isSynchronous != null and isSynchronous != ''">
+			and isSynchronous=#{isSynchronous}
+		</if>
+	</select>
+	
+	<update id="updateBuildingFeatureTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeatureTemp">
+		update 
+		BM_BuildingFeatureTemp
+		set 
+		featureName = #{featureName},
+		updateTime = now(),
+		isSynchronous = 0
+	</update>
+	
+	<update id="updateBuildingFeatureTempInValid" parameterType="Map">
+		update 
+		BM_BuildingFeatureTemp
+		set 
+		updateTime = now(),
+		isSynchronous = 0,
+		isValid = 0
+		where 
+		id in
+		<foreach collection="featureIds" index="index" item="item" open="(" separator="," close=")">  
+            #{item}   
+    	</foreach>  
+	</update>
+	
+	<update id="updateBuildingFeatureTempSynchronized" parameterType="Integer">
+		update 
+		BM_BuildingFeatureTemp
+		set
+		lastSynchronousTime = now(),
+		isSynchronous = 1
+		where 
+		buildingId = #{buildingId}
+	</update>
+
+</mapper> 

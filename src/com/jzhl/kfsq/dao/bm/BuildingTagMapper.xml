@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingTagMapper">
+
+	<insert id="saveBuildingTag" parameterType="com.jzhl.kfsq.entity.bm.BuildingTag">
+	   insert into BM_BuildingTag (
+	     buildingId,
+	     tagId,
+	     isShow,
+	     isValid,
+	     <if test="creatorUserId != null">
+		     creatorUserId,
+	     </if>
+	     <if test="updateUserId != null">
+		     updateUserId,
+	     </if>
+		 updateTime,
+	     createTime
+	   )values (
+	     #{buildingId},
+	     #{tagId},
+	     #{isShow},
+	     #{isValid},
+	     <if test="creatorUserId != null">
+		     #{creatorUserId},
+	     </if>
+	     <if test="updateUserId != null">
+		     #{updateUserId},
+	     </if>
+		 now(),
+	     now()
+	   )
+	</insert>
+	
+	<select id="findBuildingTagDataSet" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.BuildingTagDataSet">
+		SELECT
+			smt.tagId tagId,
+			smt.tagName tagName,
+			(
+				CASE bmbt.isShow
+				WHEN 1 THEN
+					smt.goodIcon
+				WHEN 2 THEN
+					smt.badIcon
+				END
+			) icon
+		FROM
+			BM_BuildingTag bmbt,
+			SM_Tag smt
+		WHERE
+			bmbt.tagId = smt.tagId
+		AND bmbt.buildingId = #{buildingId}
+		AND bmbt.isShow = #{isShow}
+		AND bmbt.isValid = 1
+		AND smt.isValid = 1
+	</select>
+	
+	<!-- 根据楼盘Id删除关联标签列表 -->
+	<delete id="deleteTag" parameterType="map">
+		delete from BM_BuildingTag where buildingId=#{buildingId}
+	</delete>
+	
+	<!-- 根据楼盘编号查询户型标签 -->
+	<select id="findTagByBuildingId" parameterType="int" resultType="string">
+		SELECT
+			smt.tagName
+		FROM
+			BM_UnitMapFeature bmumf1,
+			SM_Tag smt
+		WHERE
+			bmumf1.tagId = smt.tagId
+		AND smt.isScore = 1
+		AND smt.tagType = 4
+		AND unitMapId IN (
+			SELECT
+				bmumf.unitMapId
+			FROM
+				BM_UnitMap bmum,
+				BM_UnitMapFeature bmumf
+			WHERE
+				bmum.buildingId = #{buildingId}
+			AND bmum.isValid = 1
+			AND bmum.unitMapId = bmumf.unitMapId
+			AND bmumf.isValid = 1
+			GROUP BY
+				bmumf.unitMapId
+		)
+		GROUP BY
+			smt.tagName
+	</select>
+	
+</mapper> 

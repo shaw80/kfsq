@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IBuildingCommentFollowDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.cm.BuildingCommentFollowDataSet" id="baseResultMap">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="content" />
+		<result property="banner" column="banner" />
+		<result property="commentCount" column="commentCount" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.cm.NewestFollowInfoDataSet" id="newestInfoResultMap">
+		<id property="createTime" column="createTime" />
+		<result property="headPortrait" column="headPortrait" />
+	</resultMap>
+	
+	<select id="findBuildingCommentFollowPage" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentFollowPageDto" resultMap="baseResultMap">
+		select 
+		    bmb.buildingId as buildingId, 
+		    bmb.buildingName as buildingName, 
+		    bmb.banner as banner, 
+            (
+				SELECT
+					COUNT(commentId) AS commentCount1
+				FROM
+					CM_BuildingComment
+				WHERE
+					buildingId = bmb.buildingId
+				AND auditStatus = 1
+				AND parentCommentId = 0
+				AND creatorUserId != #{memberId}
+			) + (
+				SELECT
+					COUNT(commentId) AS commentCount2
+				FROM
+					CM_BuildingComment
+				WHERE
+					buildingId = bmb.buildingId
+				AND auditStatus != 3
+				AND parentCommentId = 0
+				AND creatorUserId = #{memberId}
+			) AS commentCount,
+		    mmf.followId as followId
+		from 
+			BM_Building bmb 
+		inner join 
+			MM_Follow mmf 
+		on mmf.buildingId = bmb.buildingId 		
+		and mmf.isValid = 1 and bmb.isValid = 1 
+		where mmf.memberId = #{memberId} 
+		group by bmb.buildingId 
+		limit #{rowStart}, #{offset} 
+	</select>
+	
+	<select id="findBuildingCommentFollowPageCount" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentFollowPageDto" resultType="java.lang.Integer">
+		select count(mmf.buildingId) 
+		from MM_Follow mmf, BM_Building bmb
+		where mmf.buildingId = bmb.buildingId
+		and mmf.memberId = #{memberId}
+		and mmf.isValid = 1 and bmb.isValid = 1
+	</select>
+	
+	<select id="getBuildingCommentFollowNewestInfo" parameterType="java.lang.Integer" resultMap="newestInfoResultMap"> 
+		select 
+		cmbc.createTime, 
+		(
+			case when 
+			cmbc.creatorUserId is null 
+			then cmbc.headPortrait 
+			else (
+				select 
+				mmm.headPortrait 
+				from 
+				MM_Member mmm 
+				where mmm.memberId = #{creatorUserId}
+				and mmm.isValid = 1
+			) end
+		) as headPortrait 
+		from CM_BuildingComment cmbc
+		where cmbc.createTime = (
+			select 
+			max(cmbc2.createTime) 
+			from 
+			MM_Follow mmf, CM_BuildingComment cmbc2
+			where mmf.buildingId = cmbc2.buildingId
+			and mmf.creatorUserId = #{creatorUserId}
+			and mmf.isValid = 1
+			and cmbc2.isValid = 1
+		)
+	</select>
+</mapper>

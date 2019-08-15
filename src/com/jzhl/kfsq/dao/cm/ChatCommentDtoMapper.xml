@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IChatCommentDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.cm.ChatCommentDataSet" id="baseResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="parentCommentId" column="parentCommentId" />
+		<result property="content" column="content" />
+		<result property="createTime" column="createTime" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="nickName" column="nickName" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.cm.CommentReplyDataSet" id="replyResultMap">
+		<id property="replycommentId" column="replycommentId" />
+		<result property="replyContent" column="replyContent" />
+		<result property="replyMemberName" column="replyMemberName" />
+		<result property="replyMemberHeadPortrait" column="replyMemberHeadPortrait" />
+		<result property="replyParentMemberName" column="replyParentMemberName" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		cmcc.commentId,
+		cmcc.parentCommentId,
+		cmcc.content,
+		cmcc.creatorUserId,
+		cmcc.createTime,
+		mmm.headPortrait,
+		mmm.nickName,
+		count(cmcc2.parentCommentId) as commentCount
+	</sql>
+	
+	<sql id="baseTables">
+		CM_ChatComment cmcc left join MM_Member mmm on mmm.memberId = cmcc.creatorUserId 
+	</sql>
+	
+	<select id="findChatCommentPage" parameterType="com.jzhl.kfsq.dto.cm.ChatCommentPageDto" resultMap="baseResultMap">
+	
+		<if test="memberId != null">
+			(
+				SELECT
+					<include refid="baseColumns" />
+				FROM
+					CM_ChatComment cmcc
+				LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+				LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+				WHERE
+					cmcc.parentCommentId = 0
+				AND cmcc.isValid = 1
+				AND (
+					cmcc2.isValid = 1
+					OR cmcc2.isValid IS NULL
+				)
+				AND (
+					cmcc2.parentCommentId IS NULL
+					OR cmcc2.parentCommentId != 0
+				)
+				<if test="lastTime != null">
+					AND cmcc.createTime > #{lastTime}
+				</if>
+				AND mmm.memberId = #{memberId}
+				AND (
+						cmcc.configValue = 0
+						OR cmcc.configValue = 1
+					)
+				GROUP BY
+					cmcc.commentId
+				ORDER BY
+					cmcc.createTime DESC
+				LIMIT #{rowStart}, #{offset}
+			)
+			UNION
+				(
+					SELECT
+						<include refid="baseColumns" />
+					FROM
+						CM_ChatComment cmcc
+					LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+					LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+					WHERE
+						cmcc.parentCommentId = 0
+					AND cmcc.isValid = 1
+					AND (
+						cmcc2.isValid = 1
+						OR cmcc2.isValid IS NULL
+					)
+					AND (
+						cmcc2.parentCommentId IS NULL
+						OR cmcc2.parentCommentId != 0
+					)
+					<if test="lastTime != null">
+						AND cmcc.createTime > #{lastTime}
+					</if>
+					AND mmm.memberId != #{memberId}
+					AND cmcc.configValue = 1
+					GROUP BY
+						cmcc.commentId
+					ORDER BY
+						cmcc.createTime DESC
+					LIMIT #{rowStart}, #{offset}
+				)
+		</if>
+		<if test="memberId == null">
+			SELECT
+				<include refid="baseColumns" />
+			FROM
+				CM_ChatComment cmcc
+			LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+			LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+			WHERE
+				cmcc.parentCommentId = 0
+			AND cmcc.isValid = 1
+			AND (
+				cmcc2.isValid = 1
+				OR cmcc2.isValid IS NULL
+			)
+			AND (
+				cmcc2.parentCommentId IS NULL
+				OR cmcc2.parentCommentId != 0
+			)
+			<if test="lastTime != null">
+				AND cmcc.createTime > #{lastTime}
+			</if>
+			AND cmcc.configValue = 1
+			GROUP BY
+				cmcc.commentId
+			ORDER BY
+				cmcc.createTime DESC
+			LIMIT #{rowStart}, #{offset}
+		</if>
+		
+	</select>
+	
+	<select id="findChatCommentPageCount" parameterType="com.jzhl.kfsq.dto.cm.ChatCommentPageDto" resultType="java.lang.Integer">
+		<if test="memberId != null">
+			SELECT COUNT(a.commentId) FROM
+			((
+				SELECT
+					<include refid="baseColumns" />
+				FROM
+					CM_ChatComment cmcc
+				LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+				LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+				WHERE
+					cmcc.parentCommentId = 0
+				AND cmcc.isValid = 1
+				AND (
+					cmcc2.isValid = 1
+					OR cmcc2.isValid IS NULL
+				)
+				AND (
+					cmcc2.parentCommentId IS NULL
+					OR cmcc2.parentCommentId != 0
+				)
+				<if test="lastTime != null">
+					AND cmcc.createTime > #{lastTime}
+				</if>
+				AND mmm.memberId = #{memberId}
+				AND (
+						cmcc.configValue = 0
+						OR cmcc.configValue = 1
+					)
+				GROUP BY
+					cmcc.commentId
+				ORDER BY
+					cmcc.createTime DESC
+			)
+			UNION
+				(
+					SELECT
+						<include refid="baseColumns" />
+					FROM
+						CM_ChatComment cmcc
+					LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+					LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+					WHERE
+						cmcc.parentCommentId = 0
+					AND cmcc.isValid = 1
+					AND (
+						cmcc2.isValid = 1
+						OR cmcc2.isValid IS NULL
+					)
+					AND (
+						cmcc2.parentCommentId IS NULL
+						OR cmcc2.parentCommentId != 0
+					)
+					<if test="lastTime != null">
+						AND cmcc.createTime > #{lastTime}
+					</if>
+					AND mmm.memberId != #{memberId}
+					AND cmcc.configValue = 1
+					GROUP BY
+						cmcc.commentId
+					ORDER BY
+						cmcc.createTime DESC
+				)) AS a
+		</if>
+		<if test="memberId == null">
+			SELECT COUNT(a.commentId) FROM
+			(SELECT
+				<include refid="baseColumns" />
+			FROM
+				CM_ChatComment cmcc
+			LEFT JOIN CM_ChatComment cmcc2 ON cmcc.commentId = cmcc2.parentCommentId
+			LEFT JOIN MM_Member mmm ON mmm.memberId = cmcc.creatorUserId
+			WHERE
+				cmcc.parentCommentId = 0
+			AND cmcc.isValid = 1
+			AND (
+				cmcc2.isValid = 1
+				OR cmcc2.isValid IS NULL
+			)
+			AND (
+				cmcc2.parentCommentId IS NULL
+				OR cmcc2.parentCommentId != 0
+			)
+			<if test="lastTime != null">
+				AND cmcc.createTime > #{lastTime}
+			</if>
+			AND cmcc.configValue = 1
+			GROUP BY
+				cmcc.commentId
+			ORDER BY
+				cmcc.createTime DESC)
+			AS a
+		</if>
+	</select>
+	
+	<select id="getChatCommentDataSet" parameterType="java.lang.Integer" resultMap="baseResultMap">
+		select 		
+			cmcc.commentId,
+			cmcc.parentCommentId,
+			cmcc.content,
+			cmcc.creatorUserId,
+			cmcc.createTime,
+			mmm.headPortrait,
+			mmm.nickName
+		from 
+			<include refid="baseTables" />
+		where cmcc.commentId = #{commentId}
+	</select>
+	
+	<select id="findChatCommentReplyPage" parameterType="com.jzhl.kfsq.dto.cm.CommentReplyDto" resultMap="replyResultMap">
+		select 
+			cmcc.commentId as replycommentId, 
+			cmcc.content as replyContent, 
+			mmm.NickName as replyMemberName, 
+			mmm.headPortrait as replyMemberHeadPortrait, 
+			rmmm.NickName as replyParentMemberName 
+			from CM_ChatComment cmcc
+		left join MM_Member mmm on cmcc.creatorUserId = mmm.memberId and mmm.isValid = 1
+		left join MM_Member rmmm on cmcc.replyparentUserId = rmmm.memberId and rmmm.isValid = 1
+		where cmcc.parentCommentId = #{commentId} and cmcc.isValid = 1
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	
+	<select id="findChatCommentReplyCount" parameterType="com.jzhl.kfsq.dto.cm.CommentReplyDto" resultType="java.lang.Integer">
+		select 
+			count(commentId)
+		from 
+			CM_ChatComment
+		where parentCommentId = #{commentId}
+	</select>
+	
+</mapper>

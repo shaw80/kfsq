@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.pm.ISalesManagerCountMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.pm.SalesManagerCountDataSet" id="baseResultMap">
+		<result property="roleName" column="roleName" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="todayCount" column="todayCount" />
+		<result property="monthCount" column="monthCount" />
+		<result property="totalCount" column="totalCount" />
+		<result property="extendPrice" column="extendPrice" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.SevenDayReceiveDataSet" id="sevenResultMap">
+		<result property="count" column="count" />
+		<result property="day" column="day" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.VisitCommonBean" id="visitCommonPersonResultMap">
+		<result property="userId" column="userId" />
+		<result property="count" column="count" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="userName" column="userName" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.VisitCommonBean" id="visitCommonTeamResultMap">
+		<result property="userId" column="userId" />
+		<result property="count" column="count" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="userName" column="userName" />
+		<result property="maxVisitTime" column="maxVisitTime" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.CustomerDataSet" id="customerResultMap">
+		<result property="headPortrait" column="headPortrait" />
+		<result property="memberName" column="memberName" />
+		<result property="visitTime" column="visitTime" />
+		<result property="salerName" column="salerName" />
+		<result property="price" column="price" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.sm.ManagerReceiveDataSet" id="managerResultMap">
+		<result property="userId" column="userId" />
+		<result property="name" column="name" />
+		<result property="appUserType" column="appUserType" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="buildingName" column="buildingName" />
+		<result property="superiorName" column="superiorName" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.sm.SalerDataSet" id="salerResultMap">
+		<result property="userId" column="userId" />
+		<result property="name" column="name" />
+		<result property="account" column="account" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+
+	<!-- 统计销售经理页面相关数据 -->
+	<select id="getCount" parameterType="map" resultMap="baseResultMap">
+		select 
+		r.roleName roleName, 
+		u.headPortrait headPortrait, 
+		( select count(sc.userId) from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) <![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d') ]]> ) todayCount, 
+		( select count(sc.userId) from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) <![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{monthBeginTime}, '%Y-%m-%d') ]]> <![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{monthEndTime}, '%Y-%m-%d') ]]> ) monthCount, 
+		( select count(sc.userId) from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) ) totalCount, 
+		( select sum(er.price) from FM_EnvelopeReceive er where er.memberId in ( select sc.memberId from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) ) and er.envelopeId in ( select envelopeId from FM_EnvelopeRecharge er where er.buildingId in ( select buildingId from SM_UserBuilding where userId = #{userId} ) ) ) extendPrice 
+		from 
+		SM_User u, 
+		SM_Role r 
+		where 
+		u.userId = #{userId} 
+		and 
+		u.roleId = r.roleId
+	</select>
+	
+	<!-- 查询某一个时间节点的折线图数据 -->
+	<select id="getSevenDay" parameterType="map" resultMap="sevenResultMap">
+		select 
+		count(sc.userId) count, 
+		date_format(date_sub(now(),interval #{day} day), '%Y-%m-%d') day
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u 
+		where 
+		sc.userId = u.userId 
+		and 
+		sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) 
+		<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') = date_format(date_sub(now(),interval #{day} day), '%Y-%m-%d') ]]>
+	</select>
+	
+	<!-- 根据销售经理编号查询所有下属的某段时间的到访业绩 -->
+	<select id="findVisitPerson" parameterType="map" resultMap="visitCommonPersonResultMap">
+		select 
+		count(sc.userId) count,
+		u.userId userId,
+		u.name userName,
+		u.headPortrait headPortrait
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u 
+		where 
+		sc.userId = u.userId 
+		and 
+		sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} )
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+		group by sc.userId 
+		order by count(sc.userId) desc, max(sc.createTime) asc
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据销售经理编号统计所有下属的某段时间到访业绩的数据量 -->
+	<select id="countVisitPerson" parameterType="map" resultType="Integer">
+		select 
+		count(a.count) 
+		from 
+		(
+			select 
+			count(u.name) count 
+			from 
+			PM_SalerCustomer sc, 
+			SM_User u 
+			where 
+			sc.userId = u.userId 
+			and 
+			sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} ) 
+			<if test="beginTime != null and beginTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+			</if> 
+			group by u.userId
+		) a
+	</select>
+	
+	<!-- 根据销售经理编号查询一段时间的到访量 -->
+	<select id="getVisit" parameterType="map" resultType="Integer">
+		select 
+		count(sc.userId) 
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u 
+		where 
+		sc.userId = u.userId 
+		and 
+		sc.userId in ( select u.userId from SM_User u where u.leaderUserId = #{userId} )
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+	</select>
+	
+	<!-- 根据销售经理编号分页查询某段时间本楼盘所有团队到访业绩 -->	
+	<select id="findVisitTeam" parameterType="map" resultMap="visitCommonTeamResultMap">
+		 select 
+		 a.userId userId, 
+		 a.name userName,
+		 a.headPortrait headPortrait,
+		 ( 
+			select count(sc.userId) from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = a.userId and u.isValid = 1 ) and sc.isValid = 1
+			<if test="beginTime != null and beginTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+			</if> 
+		)  count,
+		( 
+			select sc.createTime from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = a.userId and u.isValid = 1 ) and sc.isValid = 1  
+			<if test="beginTime != null and beginTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and date_format(sc.createTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+			</if>   
+			order by sc.createTime desc limit 0, 1
+		) maxVisitTime  
+		from 
+		SM_User a 
+		where 
+		leaderUserId = ( select leaderUserId from SM_User where userId = #{userId} and isValid = 1 ) 
+		and 
+		isValid = 1  
+		order by count desc, maxVisitTime asc limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据销售经理编号统计本楼盘有多少个销售经理 -->
+	<select id="countVisitTeam" parameterType="map" resultType="Integer">
+		select 
+		count(userId) 
+		from 
+		SM_User a 
+		where 
+		userId in (
+					select 
+					userId 
+					from 
+					SM_User 
+					where 
+					leaderUserId = 
+									( select leaderUserId from SM_User where userId = #{userId} and isValid = 1 ) 
+					and 
+					isValid = 1 
+				   ) 
+		and isValid = 1
+	</select>
+	
+	<!-- 条件分页查询到访客户 -->	
+	<select id="findCustomerDataSet" parameterType="map" resultMap="customerResultMap">
+		select 
+		m.headPortrait headPortrait, 
+		m.nickName memberName, 
+		DATE_FORMAT(sc.createTime,'%m-%d %H:%i') visitTime, 
+		u.name salerName,
+		(SELECT rece.price from FM_EnvelopeReceive rece, FM_EnvelopeRecharge rech where rece.envelopeId = rech.envelopeId and rece.memberId = sc.memberId and rech.buildingId = sc.buildingId order By rech.createTime desc LIMIT 0, 1 ) price 
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u, 
+		MM_Member m
+		where 
+		sc.userId = u.userId 
+		<if test="leaderId != null">
+			and u.leaderUserId = #{leaderId}
+		</if>
+		and 
+		m.memberId = sc.memberId 
+		and
+		m.isValid = 1
+		and
+		u.isValid = 1
+		and
+		sc.isValid = 1
+		<if test="userId != null">
+			and sc.userId = #{userId}
+		</if>
+		<if test="memberName != null and memberName != ''">
+			and m.nickName like '%${memberName}%'
+		</if>
+		order by sc.createTime DESC
+		LIMIT #{begin}, #{length}
+	</select>
+	
+	<!-- 统计条件分页查询到访客户数据量 -->	
+	<select id="countCustomerDataSet" parameterType="map" resultType="Integer">
+		select 
+		count(sc.memberId)
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u, 
+		MM_Member m
+		where 
+		sc.userId = u.userId
+		<if test="leaderId != null">
+			and u.leaderUserId = #{leaderId}
+		</if>
+		and 
+		m.memberId = sc.memberId 
+		and
+		m.isValid = 1
+		and
+		u.isValid = 1
+		and
+		sc.isValid = 1
+		<if test="userId != null">
+			and sc.userId = #{userId}
+		</if>
+		<if test="memberName != null and memberName != ''">
+			and m.nickName like '%${memberName}%'
+		</if>
+	</select>
+	
+	<!-- 根据销售经理编号查询销售经理信息 -->	
+	<select id="getManagerDataSet" parameterType="Int" resultMap="managerResultMap">
+		SELECT 
+		u.userId userId, 
+		u.name name, 
+		u.appUserType appUserType, 
+		u.headPortrait headPortrait, 
+		(SELECT buildingName from BM_Building WHERE buildingId = ub.buildingId) buildingName,
+		(select name from SM_User where userId = (select leaderUserId from SM_User where userId = #{userId})) superiorName
+		from 
+		SM_User u, 
+		SM_UserBuilding ub 
+		where 
+		u.userId = ub.userId 
+		and 
+		u.userId = #{userId}
+	</select>
+	
+	<!-- 根据销售经理编号分页查询下属置业顾问信息 -->	
+	<select id="findSalerDataSet" parameterType="map" resultMap="salerResultMap">
+		select 
+		userId, 
+		name, 
+		headPortrait, 
+		account, 
+		isValid 
+		from 
+		SM_User 
+		where 
+		leaderUserId = #{userId}
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据销售经理编号统计下属置业顾问信息的数据量 -->	
+	<select id="countSalerDataSet" parameterType="Int" resultType="Integer">
+		select 
+		count(userId) 
+		from 
+		SM_User 
+		where 
+		leaderUserId = #{userId}
+	</select>
+	
+</mapper>

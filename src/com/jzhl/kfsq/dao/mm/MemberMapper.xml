@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.mm.IMemberMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.mm.Member" id="baseResultMap">
+		<id property="memberId" column="memberId" />
+		<result property="account" column="account" />
+		<result property="password" column="password" />
+		<result property="sex" column="sex" />
+		<result property="nickName" column="nickName" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="phone" column="phone" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="lastLoginTime" column="lastLoginTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="baseResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="baseResultMap"></resultMap>	
+	
+	<sql id="baseColumns">
+		memberId,
+		account,
+		password,
+		sex,
+		nickName,
+		headPortrait,
+		phone,
+		createTime,
+		updateTime,
+		lastLoginTime,
+		isValid,
+		companyAddr,
+		companyLongitude,
+		companyLatitude,
+		homeAddr,
+		homeLongitude,
+		homeLatitude
+	</sql>
+	
+	<insert id="insertMember" parameterType="com.jzhl.kfsq.entity.mm.Member" useGeneratedKeys="true" keyProperty="memberId" >
+		insert into MM_Member
+		(
+			account
+			,password
+			,nickName
+			,cityId 
+			,phone
+			,createTime
+		)
+		values
+		(
+			#{account}
+			,#{password}
+			,#{nickName}
+			,#{cityId}
+			,#{phone}
+			,now()
+		)
+	</insert>
+	
+	
+	<update id="updateMember" parameterType="com.jzhl.kfsq.entity.mm.Member">
+		update MM_Member set
+			updateTime = now()
+			<if test="password != null and password != ''">
+				,password = #{password}
+			</if>
+			<if test="nickName != null and nickName != ''">
+				,nickName = #{nickName}
+			</if>
+			<if test="headPortrait != null and headPortrait != ''">
+				,headPortrait = #{headPortrait}
+			</if>
+			<if test="sex != null and sex != ''">
+				,sex = #{sex}
+			</if>
+			<if test="lastLoginTime != null">
+				,lastLoginTime = now()
+			</if>
+			<if test="isValid != null">
+				,isValid = #{isValid}
+			</if>	
+			<if test="companyAddr != null and companyAddr != '' and companyLatitude != null and companyLatitude != '' and companyLongitude != null and companyLongitude != ''">
+				,companyAddr = #{companyAddr} ,companyLongitude = #{companyLongitude}, companyLatitude = #{companyLatitude}
+			</if>
+			<if test="homeAddr != null and homeAddr != '' and homeLongitude != null and homeLongitude != '' and homeLatitude != null and homeLatitude != ''">
+				,homeAddr = #{homeAddr} ,homeLongitude = #{homeLongitude}, homeLatitude = #{homeLatitude}
+			</if>			
+		where 
+		<trim prefixOverrides="and">
+			<if test="memberId != null and memberId != ''">
+				and memberId = #{memberId}
+			</if>
+			<if test="account != null  and account != ''">
+				and account = #{account}
+			</if>
+			<if test="isValidParam != null and isValidParam != ''">
+				and isValid = #{isValidParam}
+			</if>
+		</trim>
+	</update>
+	
+	<select id="getMember" parameterType="com.jzhl.kfsq.entity.mm.Member" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from MM_Member
+		where 
+		1=1
+		<if test="memberId != null and memberId != ''">
+			and memberId = #{memberId}
+		</if>
+		<if test="account != null and account != ''">
+			and account = #{account}
+		</if>
+		<if test="password != null and password != ''">
+			and password = #{password}
+		</if>
+		<if test="isValidParam != null and isValidParam != ''">
+			and isValid = #{isValidParam}
+		</if>
+	</select>
+	
+	<select id="getMembers" parameterType="java.util.HashMap" resultMap="baseResultMap">
+		SELECT 
+		<include refid="baseColumns" />
+		FROM MM_Member
+		<where>
+		    <trim prefixOverrides="and">
+		        <if test="account != null and account != ''">
+			    and account = #{account}
+		        </if>
+		        <if test="isValid != null and isValid != ''">
+			    and isValid = #{isValid}
+		        </if>		
+			</trim>
+		</where>
+	</select>	
+	
+	<!-- 根据名称查询会员 -->
+	<select id="findMemberByName" parameterType="map" resultMap="baseResultMap">
+		SELECT 
+		<include refid="baseColumns" />
+		FROM MM_Member
+		WHERE
+		nickName like '%${nickName}%'
+		AND
+		isValid = 1
+	</select>
+	
+	<!-- 获取用户列表 -->
+	<select id="getMemberList" parameterType="map" resultMap="pageResultMap">
+		select t1.memberId, t1.nickName,t1.phone,t1.isValid
+		   ,(select COUNT(t2.creatorUserId) from PM_Plan t2 where t2.isValid=1 and t2.creatorUserId =t1.memberId) planNum
+		   ,(select COUNT(t5.salerCustomerId) from PM_SalerCustomer t5 where t5.isValid =1 and t5.memberId =t1.memberId) visitNum
+		   ,(select COUNT(t3.creatorUserId) from MM_Follow t3 where t3.isValid=1 and t3.creatorUserId =t1.memberId) followNum 
+		   ,(select COUNT(t4.creatorUserId) from CM_BuildingComment t4 where t4.isValid=1 and t4.parentCommentId =0 and t4.creatorUserId =t1.memberId) buildingCommentNum 
+	       ,t1.createTime
+		   ,t2.areaName
+	    FROM  MM_Member t1
+		LEFT JOIN SM_ProvinceCity t2 on t1.cityId = t2.areaId
+	    <where>
+	     <if test="cityFlag != null">
+	        t2.areaName like '%${cityFlag}%'
+	     </if>
+	     <if test="cityId != null">
+	        and t1.cityId = #{cityId}
+	     </if>
+	     <if test="keyword != null">
+	        and (t1.nickName like '%${keyword}%'
+	        or t1.phone like '%${keyword}%'
+	        or t1.memberId in
+			(
+					select distinct t1.creatorUserId from PM_Plan t1 LEFT JOIN BM_Building t2 on t2.buildingId = t1.buildingId 
+						where t2.buildingName like '%${keyword}%'
+				union
+					select distinct t1.creatorUserId from CM_BuildingComment t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId 
+						where t2.buildingName like '%${keyword}%'
+				union
+					select distinct t1.creatorUserId from MM_Follow t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+						where t2.buildingName like '%${keyword}%'
+			 )
+			)
+	     </if>
+	     <if test="dateFlag7d != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 7 DAY) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateFlag1m != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 1 MONTH) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateFlag3m != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 3 MONTH) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	     </if>
+	     <if test="branchId != null">
+	        and t1.cityId in(select branchCityId from SM_Branch where branchId = #{branchId})
+	     </if>
+	   </where>
+	   order by t1.createTime desc
+	   		<if test="isDownFlag == null">
+			   limit #{rowstart}, #{offset}
+	   		</if>
+	</select>
+	
+	<!-- 查寻总列表统计数据 -->
+	<select id="getListNum" parameterType="map" resultType="com.jzhl.kfsq.entity.mm.Member">
+		select sum(planNum) planListNum 
+       		  ,sum(visitNum) visitListNum 
+			  ,sum(followNum) followListNum
+			  ,sum(buildingCommentNum) buildingCommentListNum
+		from (
+				(select t1.memberId, t1.nickName,t1.phone
+				   ,(select COUNT(t2.creatorUserId) from PM_Plan t2 where t2.isValid=1 and t2.creatorUserId =t1.memberId) planNum
+				   ,(select COUNT(t5.salerCustomerId) from PM_SalerCustomer t5 where t5.isValid =1 and t5.memberId =t1.memberId) visitNum
+				   ,(select COUNT(t3.creatorUserId) from MM_Follow t3 where t3.isValid=1 and t3.creatorUserId =t1.memberId) followNum 
+				   ,(select COUNT(t4.creatorUserId) from CM_BuildingComment t4 where t4.isValid=1 and t4.parentCommentId =0 and t4.creatorUserId =t1.memberId) buildingCommentNum 
+			       ,t1.createTime 
+			       ,t2.areaName
+			    FROM  MM_Member t1
+				LEFT JOIN SM_ProvinceCity t2 on t1.cityId = t2.areaId
+			    <where>
+			     <if test="cityFlag != null">
+			        t2.areaName like '%${cityFlag}%'
+			     </if>
+			     <if test="cityId != null">
+			        and t1.cityId = #{cityId}
+			     </if>
+			     <if test="keyword != null">
+			        and (t1.nickName like '%${keyword}%'
+			        or t1.phone like '%${keyword}%'
+			        or t1.memberId in
+					(
+							select distinct t1.creatorUserId from PM_Plan t1 LEFT JOIN BM_Building t2 on t2.buildingId = t1.buildingId 
+								where t2.buildingName like '%${keyword}%'
+						union
+							select distinct t1.creatorUserId from CM_BuildingComment t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId 
+								where t2.buildingName like '%${keyword}%'
+						union
+							select distinct t1.creatorUserId from MM_Follow t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+								where t2.buildingName like '%${keyword}%'
+					 )
+					)
+			     </if>
+			     <if test="dateFlag7d != null">
+			        and <![CDATA[date_sub(curdate(), INTERVAL 7 DAY) <= date(t1.createTime)]]>
+			     </if>
+			     <if test="dateFlag1m != null">
+			        and <![CDATA[date_sub(curdate(), INTERVAL 1 MONTH) <= date(t1.createTime)]]>
+			     </if>
+			     <if test="dateFlag3m != null">
+			        and <![CDATA[date_sub(curdate(), INTERVAL 3 MONTH) <= date(t1.createTime)]]>
+			     </if>
+			     <if test="dateStart != null and dateEnd != null">
+			        and t1.createTime between #{dateStart} and #{dateEnd}
+			     </if>
+			     <if test="branchId != null">
+			        and t1.cityId in(select branchCityId from SM_Branch where branchId = #{branchId})
+			     </if>
+			   </where>) as unTable
+			 )
+	</select>
+	
+	<!-- 获取用户详情 -->
+	<select id="getMemberInfo" parameterType="com.jzhl.kfsq.entity.mm.Member" resultMap="baseResultMap">
+		select t2.areaName, t1.memberId, t1.nickName,t1.phone,t1.createTime 
+	   ,(select COUNT(t2.creatorUserId) from PM_Plan t2 where t2.isValid=1 and t2.creatorUserId =t1.memberId) planNum  
+	   ,(select COUNT(t5.salerCustomerId) from PM_SalerCustomer t5 where t5.isValid =1 and t5.memberId =t1.memberId) visitNum
+       ,(select ifnull(SUM(price),0) from FM_EnvelopeReceive where status != 0 and envelopeType = 1 and isValid =1 and memberId = #{memberId}) commentEnveloppe
+	   ,(select ifnull(SUM(price),0) from FM_EnvelopeReceive where status != 0 and envelopeType = 0 and isValid =1 and memberId = #{memberId}) lookEnveloppe
+	   , t1.isValid
+	   , t3.upperPrive
+         FROM  MM_Member t1 
+         LEFT JOIN SM_ProvinceCity t2 on t1.cityId = t2.areaId
+         LEFT JOIN SM_Branch t3 on t1.cityId = t3.branchCityId
+         where t1.memberId = #{memberId}
+	</select>
+	
+	<!-- 获取用户統計 -->
+	<select id="getMemberStatistical" parameterType="map" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+	   select COUNT(t1.memberId) memberNum
+	   ,(select COUNT(t2.planId) from PM_Plan t2 where t2.isValid =1 and t2.creatorUserId in 
+	   		(
+	   			select memberId from MM_Member 
+	   				<where>
+					     <if test="dateStart != null and dateEnd != null">
+					        createTime between #{dateStart} and #{dateEnd}
+					     </if>
+				    </where>
+	   		)
+	   	) planNum		  
+	   ,(select COUNT(t3.followId) from MM_Follow t3 where t3.isValid=1 and t3.creatorUserId in 
+	   		(	
+	   			select memberId from MM_Member  
+	   				<where>
+					     <if test="dateStart != null and dateEnd != null">
+					        createTime between #{dateStart} and #{dateEnd}
+					     </if>
+				    </where>
+	   		)
+	   	) followNum 
+	   ,(select COUNT(t4.commentId) from CM_BuildingComment t4 where t4.isValid=1 and t4.creatorUserId in 
+	   		(	
+	   			select memberId from MM_Member 
+	   				<where>
+					     <if test="dateStart != null and dateEnd != null">
+					        createTime between #{dateStart} and #{dateEnd}
+					     </if>
+				    </where>
+	   		)
+	   	) buildingCommentNum 
+	   ,(select COUNT(t5.salerCustomerId) from PM_SalerCustomer t5 where t5.isValid =1 and t5.memberId in 
+	   		(select memberId from MM_Member 
+	   		 		<where>
+					     <if test="dateStart != null and dateEnd != null">
+					        createTime between #{dateStart} and #{dateEnd}
+					     </if>
+				    </where>
+	   		 )
+	   	) visitNum
+       FROM  MM_Member t1
+	    WHERE t1.isValid = 1
+		     <if test="dateStart != null and dateEnd != null">
+		        and t1.createTime between #{dateStart} and #{dateEnd}
+		     </if>
+	</select>
+	
+	<!-- 查询会员列表总数 -->
+	<select id="findMemberDataCount" parameterType="map" resultMap="pageResultMap">
+		select t1.memberId, t1.nickName,t1.phone
+		   ,(select COUNT(t2.creatorUserId) from PM_Plan t2 where t2.isValid=1 and t2.creatorUserId =t1.memberId) planNum  
+		   ,(select COUNT(t3.creatorUserId) from MM_Follow t3 where t3.isValid=1 and t3.creatorUserId =t1.memberId) followNum 
+		   ,(select COUNT(t4.creatorUserId) from CM_BuildingComment t4 where t4.isValid=1 and t4.creatorUserId =t1.memberId) buildingCommentNum 
+	       ,t1.createTime 
+	       ,t2.areaName
+	    FROM  MM_Member t1
+		LEFT JOIN SM_ProvinceCity t2 on t1.cityId = t2.areaId
+	    <where>
+	     <if test="cityFlag != null">
+	        t2.areaName like '%${cityFlag}%'
+	     </if>
+	     <if test="cityId != null">
+	        and t1.cityId = #{cityId}
+	     </if>
+	     <if test="keyword != null">
+	        and (t1.nickName like '%${keyword}%'
+	        or t1.phone like '%${keyword}%'
+	        or t1.memberId in
+			(
+					select distinct t1.creatorUserId from  PM_Plan t1 LEFT JOIN BM_Building t2 on t2.buildingId = t1.buildingId 
+						where t2.buildingName like '%${keyword}%'
+				union
+					select distinct t1.creatorUserId from  CM_BuildingComment t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId 
+						where t2.buildingName like '%${keyword}%'
+				union
+					select distinct t1.creatorUserId from  MM_Follow t1 LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+						where t2.buildingName like '%${keyword}%'
+			 )
+			)
+	     </if>
+	     <if test="dateFlag7d != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 7 DAY) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateFlag1m != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 1 MONTH) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateFlag3m != null">
+	        and <![CDATA[date_sub(curdate(), INTERVAL 3 MONTH) <= date(t1.createTime)]]>
+	     </if>
+	     <if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	     </if>
+	     <if test="branchId != null">
+	        and t1.cityId in(select branchCityId from SM_Branch where branchId = #{branchId})
+	     </if>
+	   </where>
+	</select>
+	
+	<!-- 根据用户编号查询用户到访记录信息 -->
+	<select id="findMemberVisitList" parameterType="map" resultType="com.jzhl.kfsq.dataset.mm.MemberVisitDataSet">
+		select  t3.areaName
+			  , t2.nickName
+			  , t4.buildingName
+		      , (select t6.appointmentTime from PM_Plan t6 where t6.creatorUserId = t1.memberId and t6.isValid = 1 and t6.buildingId = t1.buildingId  order by t6.createTime limit 1) planTime
+		      , IFNULL(t5.price ,0) price 
+			  , t1.createTime visitTime
+		      , (select t6.name from SM_User t6 where t6.userId = t1.userId) userName
+		from PM_SalerCustomer t1
+			 LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+			 LEFT JOIN SM_ProvinceCity t3 on t2.cityId = t3.areaId
+			 LEFT JOIN BM_Building t4 on t4.buildingId = t1.buildingId
+			 LEFT JOIN FM_EnvelopeReceive t5 on t5.buildingId = t1.buildingId and t5.memberId = t2.memberId and t5.status != 0 and t5.envelopeType=0 and t5.isValid =1 and t5.salerCustomerId = t1.salerCustomerId
+		where t1.isValid =1  
+		  and t1.memberId = #{memberId}
+		  ORDER BY t1.createTime DESC
+        limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 查询会员到访记录列表总数 -->
+	<select id="findMemberVisitDataCount" parameterType="map" resultType="Integer">
+		select count(t1.createTime)
+			from PM_SalerCustomer t1
+				 LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+				 LEFT JOIN SM_ProvinceCity t3 on t2.cityId = t3.areaId
+				 LEFT JOIN BM_Building t4 on t4.buildingId = t1.buildingId
+				 LEFT JOIN FM_EnvelopeReceive t5 on t5.buildingId = t1.buildingId and t5.memberId = t2.memberId and t5.status != 0 and t5.envelopeType=0 and t5.isValid =1
+			where t1.isValid =1  
+			  and t1.memberId = #{memberId}
+	</select>
+	
+	<!-- 按照某年月份统计用户总数 -->
+	<select id="findMemberNumList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+		 ,COUNT(memberId) memberNum
+       FROM  MM_Member
+	    WHERE 
+	    <![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]> 
+	     <if test="branchId != null">
+	    	and cityId in(
+				SELECT branchCityId from SM_Branch where branchId = #{branchId}
+			)
+	     </if>
+			group by month   
+			order by month
+	</select>
+	
+	<!-- 按照某年月份统计加入计划总数 -->
+	<select id="findPlanNumList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+				 ,COUNT(planId) planNum
+		       FROM  PM_Plan
+			    WHERE isValid = 1 
+					and <![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]>
+					<if test="branchId != null">
+				    	and buildingId in
+				    	(
+							select buildingId from BM_Building where agentId in 
+							( 
+								select userId from SM_User where branchId = #{branchId}
+							)
+						)
+				    </if>
+					group by month   
+					order by month
+	</select>
+	
+	<!-- 按照某年月份统计到访总数 -->
+	<select id="findVisitNumList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+		 ,COUNT(salerCustomerId) visitNum
+	       FROM  PM_SalerCustomer
+		    WHERE isValid = 1 
+				and <![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]>
+					<if test="branchId != null">
+				    	and buildingId in
+				    	(
+							select buildingId from BM_Building where agentId in 
+							( 
+								select userId from SM_User where branchId = #{branchId}
+							)
+						)
+				    </if>
+				group by month   
+				order by month
+	</select>
+	
+	<!-- 按照月份分组查询看房评论圈数量 -->
+	<select id="findBuildingCommentNumList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+				 ,COUNT(commentId) buildingCommentNum
+		       FROM  CM_BuildingComment
+			    WHERE isValid = 1 and parentCommentId = 0 
+					and <![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]>
+					<if test="branchId != null">
+				    	and buildingId in
+				    	(
+							select buildingId from BM_Building where agentId in 
+							( 
+								select userId from SM_User where branchId = #{branchId}
+							)
+						)
+				    </if>
+					group by month   
+					order by month
+	</select>
+	
+	<!-- 按照月份分组查询看房圈关注数量 -->
+	<select id="findFollowNumList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+		 ,COUNT(followId) followNum
+	       FROM  MM_Follow
+		    WHERE isValid = 1 
+				and 
+				<![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]>
+					<if test="branchId != null">
+				    	and buildingId in
+				    	(
+							select buildingId from BM_Building where agentId in 
+							( 
+								select userId from SM_User where branchId = #{branchId}
+							)
+						)
+				    </if>
+				group by month   
+				order by month
+	</select>
+	
+	<!-- 某楼盘一个星期内按天分组查询到访数量 -->
+	<select id="findVisitNumByDayList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m-%d') days, 
+			count(salerCustomerId) visitNum 
+		from PM_SalerCustomer 
+		where 
+		<![CDATA[DATE_SUB(CURDATE(), INTERVAL 7 DAY) <= date(createTime)]]>
+		and buildingId in (select buildingId from SM_UserBuilding where userId = #{userId})
+		group by days
+		order by days
+	</select>
+	
+	<!-- 某楼盘本月按日期分组查询到访数量 -->
+	<select id="findVisitNumByWeekList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%d') weeks, 
+			count(salerCustomerId) visitNum 
+		from PM_SalerCustomer 
+		where 
+		DATE_FORMAT(createTime,'%Y-%m')=DATE_FORMAT(now(),'%Y-%m')
+		and buildingId in (select buildingId from SM_UserBuilding where userId = #{userId})
+		group by weeks
+		order by weeks
+	</select>
+	
+	<!-- 某楼盘6个月内按月分组查询到访数量 -->
+	<select id="findVisitNumByMonthList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.mm.MemberStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') month , 
+			count(salerCustomerId) visitNum 
+		from PM_SalerCustomer 
+		where 
+		<![CDATA[DATE_SUB(CURDATE(), INTERVAL 6 MONTH) <= date(createTime)]]> 
+		and buildingId in(select buildingId from SM_UserBuilding where userId = #{userId}) 
+		group by month
+		order by month
+	</select>
+</mapper>

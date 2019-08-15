@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingAlbumMapper">
+
+	<resultMap id="bmBuildingalbumResultMap" type="com.jzhl.kfsq.entity.bm.BuildingAlbum">
+		<id property="albumId" column="albumId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="type" column="type" />
+		<result property="imgName" column="imgName" />
+		<result property="path" column="path" />
+		<result property="ranking" column="ranking" />
+		<result property="isValid" column="isValid" />
+		<result property="createTime" column="createTime" />
+		<result property="createUserId" column="createUserId" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="bmBuildingalbumResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="bmBuildingalbumResultMap"></resultMap>
+
+	<!-- 添加图片 -->
+	<insert id="insertBuildingAlbum" parameterType="com.jzhl.kfsq.entity.bm.BuildingAlbum">
+	   insert into BM_BuildingAlbum (
+	     buildingId,
+	     type,
+	     imgName,
+	     path,
+	     ranking,
+	     isValid,
+	     createTime,
+	     createUserId
+	   )values (
+	     #{buildingId},
+	     #{type},
+	     #{imgName},
+	     #{path},
+	     #{ranking},
+	     1,
+	     now(),
+	     #{createUserId}
+	   )
+	</insert>
+
+	<!-- 编辑图片信息 -->
+	<update id="updateBuildingAlbum" parameterType="com.jzhl.kfsq.entity.bm.BuildingAlbum">
+	   update BM_BuildingAlbum set
+	     <if test="imgName != null">
+	     	imgName=#{imgName},
+	     </if>
+	     <if test="path != null">
+	     	path=#{path},
+	     </if>
+	     <if test="ranking != null">
+	     	ranking=#{ranking},
+	     </if>
+	     <if test="isValid != null">
+	     	isValid=#{isValid},
+	     </if>
+	     createTime=now()
+	   where 
+	    albumId=#{albumId} 
+	</update>
+
+	<!-- 查看图片详情 -->
+	<select id="getBuildingAlbumInfo" parameterType="com.jzhl.kfsq.entity.bm.BuildingAlbum" resultMap="bmBuildingalbumResultMap">
+	   select 
+	    albumId,
+	    buildingId,
+	    type,
+	    imgName,
+	    path,
+	    ranking,
+	    isValid,
+	    createTime,
+	    createUserId
+	   from BM_BuildingAlbum
+	   where 
+	    albumId=#{albumId} 
+	</select>
+
+	<!-- 按照相册类型查询图片列表 -->
+	<select id="findBuildingAlbumList" parameterType="map" resultMap="pageResultMap">
+	   select * from BM_BuildingAlbum
+	   <where>
+	    	isValid = 1
+	     <if test="buildingId != null">
+	        and buildingId=#{buildingId}
+	     </if>
+	     <if test="type != null">
+	        and type=#{type}
+	     </if>
+	   </where>
+	   order by ranking
+	   limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 按照相册类型查询图片列表数量 -->
+	<select id="findBuildingAlbumDataCount" parameterType="map" resultType="Integer">
+	   select COUNT(albumId) from BM_BuildingAlbum
+	   <where>
+	   		isValid = 1
+	   	 <if test="buildingId != null">
+	        and buildingId=#{buildingId}
+	     </if>
+	     <if test="type != null">
+	     	and type=#{type}
+	     </if>
+	   </where>
+	</select>
+</mapper> 

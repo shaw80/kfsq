@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.pm.IPlanMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.pm.Plan" id="baseResultMap">
+		<id property="planId" column="planId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="status" column="status" />
+		<result property="appointmentTime" column="appointmentTime" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.PlanDataSet" id="planDataSetMap">
+		<id property="planId" column="planId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="planStatus" column="planStatus" />
+		<result property="appointmentTime" column="appointmentTime" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+		<result property="scancodePrice" column="scancodePrice" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.NoCommentPlanReveiceDataSet" id="noCommentResultMap">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="buildingImg" column="buildingImg" />
+		<result property="planTime" column="planTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		planId,
+		buildingId,
+		status,
+		appointmentTime,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+	</sql>
+	
+	<sql id="planDataSetColumns">
+		planId,
+		buildingId,
+		status as planStatus,
+		appointmentTime,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid,
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer 
+			where smer.buildingId = buildingId
+			and smer.isValid = 1 limit 0, 1 
+		), 0) as scancodePrice
+	</sql>
+	
+	<insert id="insertPlan" parameterType="com.jzhl.kfsq.entity.pm.Plan">
+		insert into PM_Plan
+		(
+			<trim prefixOverrides=",">
+				<if test="buildingId != null and buildingId != 0">
+				,buildingId
+				</if>
+				,appointmentTime
+				,creatorUserId
+				,createTime
+				,isValid
+			</trim>
+		)
+		values
+		(
+			<trim prefixOverrides=",">
+				<if test="buildingId != null and buildingId != 0">
+				,#{buildingId}
+				</if>
+				,#{appointmentTime}
+				,#{creatorUserId}
+				,now()
+				,1
+			</trim>
+		)
+	</insert>
+	
+	<update id="updatePlan" parameterType="com.jzhl.kfsq.entity.pm.Plan">
+		update PM_Plan set
+		<trim prefixOverrides=",">
+			<if test="buildingId != null and buildingId != 0">
+				,buildingId = #{buildingId}
+			</if>
+			<if test="appointmentTime != null">
+				,appointmentTime = #{appointmentTime}
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId = #{updateUserId}
+			</if>
+			<if test="isValid != null">
+				,isValid = #{isValid}
+			</if>
+			<if test="status != null">
+				,status = #{status}
+			</if>
+		</trim>
+		where 
+		<if test="planId != null">
+			planId = #{planId}	
+		</if>	
+		<if test="planId == null">
+			planId in 		
+			<foreach collection="planIdList" index="index" item="item" open="("
+				separator="," close=")"> #{item}
+			</foreach>
+		</if>	
+		<if test="creatorUserId != null">
+			and creatorUserId = #{creatorUserId}
+		</if>
+		<if test = "isValidParam != null">
+		and isValid = #{isValidParam}
+		</if>
+	</update>
+	
+	<update id="updatePlanBase" parameterType="com.jzhl.kfsq.entity.pm.Plan">
+		update PM_Plan set
+		updateTime = now()
+		<if test="buildingId != null and buildingId != 0">
+			,buildingId = #{buildingId}
+		</if>
+		<if test="appointmentTime != null">
+			,appointmentTime = #{appointmentTime}
+		</if>
+		<if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		</if>
+		<if test="isValid != null">
+			,isValid = #{isValid}
+		</if>
+		<if test="status != null">
+			,status = #{status}
+		</if>
+		where 
+		planId = #{planId}	
+	</update>
+	
+	<!-- 根据会员编号查询已看房未评论的计划结果集 -->
+	<select id="findPlanDataSetByNoComment" parameterType="map" resultMap="noCommentResultMap">
+		select 
+		b.buildingName buildingName, 
+		b.banner buildingImg, 
+		p.buildingId buildingId, 
+		sc.createTime planTime 
+		from 
+		PM_Plan p, 
+		PM_SalerCustomer sc, 
+		BM_Building b 
+		where 
+		p.creatorUserId = #{memberId} 
+		and 
+		p.creatorUserId = sc.memberId 
+		and 
+		p.buildingId = b.buildingId 
+		and 
+		p.status = 1
+		GROUP BY b.buildingId
+		order by sc.createTime desc
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 统计已看房未评论的结果集数量 -->
+	<select id="countPlanDataSetByNoComment" parameterType="Integer" resultType="Integer">
+		select 
+		count(p.buildingId)
+		from 
+		PM_Plan p, 
+		PM_SalerCustomer sc, 
+		BM_Building b 
+		where 
+		p.creatorUserId = #{memberId} 
+		and 
+		p.creatorUserId = sc.memberId 
+		and 
+		p.buildingId = b.buildingId 
+		and 
+		p.status = 1
+	</select>
+	
+	<select id="getPlan" parameterType="java.lang.Integer" resultMap="planDataSetMap">
+		SELECT
+			p.planId as planId,
+			p.buildingId as buildingId,
+			p.STATUS AS planStatus,
+			p.appointmentTime as appointmentTime,
+			p.creatorUserId as creatorUserId,
+			p.createTime as createTime,
+			p.updateUserId as updateUserId,
+			p.updateTime as updateTime,
+			p.isValid as isValid,
+			ifnull(
+				(
+					SELECT
+						smer.scancodePrice AS scancodePrice
+					FROM
+						SM_EnvelopeRule smer
+					WHERE
+						smer.buildingId = p.buildingId
+					AND smer.isValid = 1
+					LIMIT 0,
+					1
+				),
+				0
+			) AS scancodePrice
+		FROM
+			PM_Plan p
+		WHERE
+			p.planId = #{planId}
+	</select>
+	
+
+	<!-- 根据楼盘编号和创建者编号查询看房计划 -->
+	<select id="getPlanIsLook" parameterType="com.jzhl.kfsq.dto.pm.PlanDto" resultMap="baseResultMap">
+		SELECT
+		<include refid="baseColumns" />
+		FROM PM_Plan
+		WHERE 
+		buildingId = #{buildingId}
+		AND
+		creatorUserId = #{creatorUserId}
+		AND isValid = 1 
+	</select>
+	
+
+	<!-- 查询明天有看房计划的member信息 -->
+	<select id="getPlanList" resultType="com.jzhl.kfsq.dataset.pm.PlanDataSet">
+		select t1.*,t2.phone from PM_Plan t1
+			LEFT JOIN MM_Member t2 on t1.creatorUserId = t2.memberId
+		where 
+		 	t1.status = 0 
+		 	and t1.isValid = 1 
+		 	and t2.isValid = 1 
+		 	and DATEDIFF(t1.appointmentTime,CURDATE())=1
+		 	GROUP BY t2.memberId
+	</select>
+	
+	<select id="getUnappointPlanCount" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		select count(planId) from PM_Plan
+		where appointmentTime is null
+		and creatorUserId = #{creatorUserId}
+		and status = '0' 
+		and isValid = 1
+	</select>
+	
+	<update id="updatePlanV2" parameterType="com.jzhl.kfsq.dto.pm.IsVisitDto">
+		UPDATE PM_Plan
+		SET isValid = 0
+		WHERE
+			buildingId = #{buildingId}
+		AND creatorUserId = #{memberId}
+	</update>
+	
+	<!-- 根据楼盘编号和会员编号设置想看时间 -->
+	<update id="updatePlanSetAppointmentTime" parameterType="com.jzhl.kfsq.dto.pm.AppointmentTimeDto">
+		UPDATE PM_Plan
+		SET appointmentTime = #{appointmentTime}
+		WHERE
+			creatorUserId = #{memberId}
+		AND buildingId = #{buildingId}
+		AND isValid = 1
+	</update>
+
+</mapper>

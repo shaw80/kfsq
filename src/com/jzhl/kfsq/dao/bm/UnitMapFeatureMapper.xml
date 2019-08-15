@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IUnitMapFeatureMapper">
+
+	<resultMap id="bmUnitmapfeatureResultMap" type="com.jzhl.kfsq.entity.sm.UnitMapFeature">
+		<id property="unitMapFeatureId" column="unitMapFeatureId" />
+		<result property="unitMapId" column="unitMapId" />
+		<result property="tagId" column="tagId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="createUserId" column="createUserId" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="bmUnitmapfeatureResultMap"></resultMap>
+
+	<!-- 保存数据 -->
+	<insert id="saveUnitMapFeature" parameterType="com.jzhl.kfsq.entity.sm.UnitMapFeature">
+	   insert into BM_UnitMapFeature (
+	     unitMapId,
+	     tagId,
+	     createTime,
+	     updateTime,
+	     createUserId,
+	     updateUserId,
+	     isValid
+	   )values (
+	     #{unitMapId},
+	     #{tagId},
+	     now(),
+	     now(),
+	     #{createUserId},
+	     #{updateUserId},
+	     #{isValid}
+	   )
+	</insert>
+
+    <!-- 按照户型编码先把原来的对应关系从表中删除 -->
+	<delete id="deleteUnitMapFeature" parameterType="map">
+	   delete from 
+	     BM_UnitMapFeature 
+	   where 
+	    unitMapId=#{unitMapId} 
+	</delete>
+</mapper> 

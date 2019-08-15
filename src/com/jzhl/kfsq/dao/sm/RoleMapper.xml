@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IRoleMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.Role" id="baseResultMap">
+		<id property="roleId" column="roleId" />
+		<result property="roleName" column="roleName" />
+		<result property="roleCode" column="roleCode" />
+		<result property="roleType" column="roleType" />
+		<result property="managerType" column="managerType" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="baseResultMap"></resultMap>
+	
+	<sql id="baseColumns">
+		roleId,
+		roleName,
+		roleCode,
+		roleType,
+		managerType,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_Role
+    </sql>
+	
+	<!-- 添加角色信息 -->
+	<insert id="insertRole" parameterType="com.jzhl.kfsq.entity.sm.Role" useGeneratedKeys="true" keyProperty="roleId">
+		insert into 
+		<include refid="tableName" />
+		(
+			roleName
+			,roleCode
+			,roleType
+			,managerType
+			,creatorUserId
+			,createTime
+		)
+		values
+		(
+			#{roleName}
+			,#{roleCode}
+			,#{roleType}
+			,#{managerType}
+			,#{creatorUserId}
+			,now()
+		)
+	</insert>
+	
+	<!-- 禁用角色信息 -->
+	<update id="deleteRole" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		roleId = #{roleId}
+	</update>
+	
+	<!-- 更新角色信息 -->
+	<update id="updateRole" parameterType="com.jzhl.kfsq.entity.sm.Role">
+		update 
+		<include refid="tableName" /> 
+		set
+		updateUserId = #{updateUserId}
+		,updateTime = now()
+		<if test="roleName != null">
+			,roleName = #{roleName}
+		</if>
+		<if test="managerType != null">
+			,managerType = #{managerType}
+		</if>
+		where
+		roleId = #{roleId}
+	</update>
+	
+	<!-- 根据角色编号查询角色信息 -->
+	<select id="getRole" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		roleId = #{roleId}
+	</select>
+	
+	<!-- 分页查询全部角色信息 -->
+	<select id="findAllByPage" parameterType="map" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where isValid=1
+		limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 根据角色名称查询角色信息 -->
+	<select id="getRoleByName" parameterType="String" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		roleName = #{roleName}
+	</select>
+	
+	<!-- 根据角色编号查询角色以及其权限信息 -->
+	<select id="findAdminRoleInfoList" parameterType="com.jzhl.kfsq.entity.sm.Role" resultMap="findResultMap">
+		select t3.roleName ,t1.rightId, t2.rightName from SM_RoleRight t1 
+		 LEFT JOIN SM_Right t2 on t1.rightId = t2.rightId 
+		 LEFT JOIN SM_Role t3 on t1.roleId = t3.roleId 
+		where
+		 t1.isValid=1 and t2.isValid=1 and t3.isValid=1
+		 and t1.roleId = #{roleId}
+	</select>
+	
+	<!-- 全部角色总数 -->
+	<select id="getRoleDataCount" resultType="Integer">
+		select count(roleId) from SM_Role where isValid=1
+	</select>
+	
+	<!-- 遍历所有角色 -->
+	<select id="getRoleList" resultType="com.jzhl.kfsq.entity.sm.Role">
+		select * from SM_Role where isValid =1
+	</select>
+	
+	<!-- 新建管理员-获取角色列表-过滤角色条件，已作废，弃用 -->
+	<select id="findUserRoleInfoList" parameterType="com.jzhl.kfsq.entity.sm.Role" resultType="com.jzhl.kfsq.entity.sm.Role">
+		SELECT DISTINCT(C.roleId),C.roleName
+		  FROM SM_RoleRight A, SM_Role C 
+		WHERE A.RoleId = C.RoleId 
+		AND EXISTS (SELECT 1 FROM SM_RoleRight B 
+		                     WHERE B.RoleId = #{roleId}
+		                         AND A.RightId = B.RightId) 
+		AND NOT EXISTS (SELECT 1 FROM (SELECT D.RoleId 
+		                                  FROM SM_RoleRight D 
+		                                  WHERE NOT EXISTS (SELECT 1 FROM SM_RoleRight E 
+		                                                            WHERE E.RoleId = #{roleId}
+		                                                            AND D.RightId = E.RightId)
+		                                     ) AS InvalidSet 
+		                            WHERE A.RoleId = InvalidSet.RoleId)
+		
+		AND C.isValid =1
+		AND C.roleId != #{roleId}
+	</select>
+	
+	<!-- 新建管理员-获取角色列表-查询代理商及其下属的角色信息 -->
+	<select id="findRoleByManagerType" resultType="com.jzhl.kfsq.entity.sm.Role">
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			SM_Role
+		WHERE
+			roleCode = 'director'
+		AND roleType = '0'
+		UNION
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			SM_Role
+		WHERE
+			managerType = '2'
+		AND isValid = 1
+		AND roleType = 1
+	</select>
+	
+	<!-- 根据用户编号获取角色名称 -->
+	<select id="getRoleNameByUserId" parameterType="Int" resultType="String">
+		SELECT roleName FROM SM_User u, SM_Role r WHERE userId = #{userId} AND u.roleId = r.roleId
+	</select>
+	
+	<!-- 根据角色编号查询对应的权限名称 -->
+	<select id="findRightsByRoleId" parameterType="Int" resultType="String">
+		SELECT
+			rightName
+		FROM
+			SM_Right
+		WHERE
+			rightId IN (
+				SELECT
+					rightId
+				FROM
+					SM_RoleRight
+				WHERE
+					roleId = #{roleId}
+			)
+		AND isMenu = '1'
+	</select>
+	
+	<!-- 根据角色编号查询菜单 -->
+	<select id="findMenusByRoleId" parameterType="com.jzhl.kfsq.dto.login.RightNamesDto" resultType="com.jzhl.kfsq.dataset.sm.Menu">
+		SELECT
+			rightId,
+			parentId,
+			rightName,
+			menu,
+			imgName
+		FROM
+			SM_Right
+		WHERE
+			rightId IN (
+				SELECT
+					rightId
+				FROM
+					SM_RoleRight
+				WHERE
+					roleId = #{roleId}
+			)
+		AND isMenu = '1'
+	</select>
+	
+	<!-- 根据角色编号查询对应的权限名称 -->
+	<select id="getRoleByRoleCode" parameterType="String" resultMap="baseResultMap">
+		SELECT
+		<include refid="baseColumns" />
+		FROM
+		<include refid="tableName" />
+		WHERE
+			roleCode = #{roleCode}
+		AND
+			roleType = '0'
+	</select>
+	
+	<!-- 根据管理端类型查询系统自带的角色信息 -->
+	<select id="getRoleByManagerType" parameterType="String" resultMap="baseResultMap">
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			<include refid="tableName" />
+		WHERE
+			managerType = #{managerType}
+		AND roleType = '0'
+		AND roleCode IN ('admin', 'agent', 'director')
+	</select>
+	
+	<!-- 根据角色名称和管理端类型查询角色信息 -->
+	<select id="getRoleByRoleNameAndManagerType" parameterType="com.jzhl.kfsq.dto.sm.RoleNameDto" resultMap="baseResultMap">
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			<include refid="tableName" />
+		WHERE
+			roleName = #{roleName}
+		AND managerType = #{managerType}
+		<if test="roleId != null">
+			AND roleId != #{roleId}
+		</if>
+	</select>
+	
+	<!-- 根据角色名称和管理端类型查询角色信息 -->
+	<select id="getRoleDetailByRoleId" parameterType="com.jzhl.kfsq.dto.sm.RoleDto" resultType="com.jzhl.kfsq.dataset.sm.RoleDetailDataSet">
+		SELECT
+			roleId, roleName, roleCode
+		FROM
+			<include refid="tableName" />
+		WHERE
+			roleId = #{roleId}
+	</select>
+
+</mapper>

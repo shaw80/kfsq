@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IEnvelopeReceiveMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.fm.EnvelopeReceive" id="baseResultMap">
+		<id property="receiveId" column="receiveId" />
+		<result property="memberId" column="memberId" />
+		<result property="envelopeId" column="envelopeId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="salerCustomerId" column="salerCustomerId" />
+		<result property="price" column="price" />
+		<result property="status" column="status" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="envelopeType" column="envelopeType" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.EnvelopeReceiveCountDataSet" id="dtoResultMap">
+		<result property="cashAmount" column="cashAmount" />
+		<result property="notActivation" column="notActivation" />
+		<result property="gain" column="gain" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.EnvelopeDealReceiveDataSet" id="dealResultMap">
+		<result property="cashAmount" column="cashAmount" />
+		<result property="notActivation" column="notActivation" />
+		<result property="gain" column="gain" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.ReadyEnvelopeReceiveDataSet" id="readyResultMap">
+		<result property="price" column="price" />
+		<result property="buildingName" column="buildingName" />
+		<result property="Type" column="Type" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		receiveId,
+		memberId,
+		envelopeId,
+		buildingId,
+		salerCustomerId,
+		price,
+		status,
+		createTime,
+		updateTime,
+		envelopeType,
+		isValid
+	</sql>
+	
+	<sql id="tableName">
+        FM_EnvelopeReceive
+    </sql>
+	
+	<!-- 添加红包领取信息 -->
+	<insert id="insertEnvelopeReceive" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeReceive">
+		insert into 
+		<include refid="tableName" />
+		(
+			memberId,
+			<if test="envelopeId != null">
+				envelopeId,
+			</if>
+			<if test="buildingId != null">
+				buildingId,
+			</if>
+			<if test="salerCustomerId != null">
+				salerCustomerId,
+			</if>
+			price,
+			status,
+			createTime
+			<if test="updateTime != null">
+				,updateTime
+			</if>
+			<if test="envelopeType != null">
+				,envelopeType
+			</if>			
+
+		)
+		values
+		(
+			#{memberId},
+			<if test="envelopeId != null">
+				#{envelopeId},
+			</if>
+			<if test="buildingId != null">
+				#{buildingId},
+			</if>
+			<if test="salerCustomerId != null">
+				#{salerCustomerId},
+			</if>
+			#{price},
+			#{status},
+			now()
+			<if test="updateTime != null">
+				,#{updateTime}
+			</if>
+			<if test="envelopeType != null">
+				,#{envelopeType} 
+			</if>				
+		)
+	</insert>
+	
+	<!-- 删除红包领取信息 -->
+	<update id="deleteEnvelopeReceive" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		receiveId = #{receiveId}
+	</update>
+	
+	<!-- 更新红包领取信息 -->
+	<update id="updateEnvelopeReceive" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeReceive">
+		update 
+		<include refid="tableName" /> 
+		set
+		updateTime = now()
+		<if test="memberId != null">
+			,memberId = #{memberId}
+		</if>
+		<if test="envelopeId != null">
+			,envelopeId = #{envelopeId}
+		</if>
+		<if test="price != null">
+			,price = #{price}
+		</if>
+		<if test="status != null">
+			,status = #{status}
+		</if>
+		where
+		receiveId = #{receiveId}
+	</update>
+	
+	<!-- 根据红包领取编号查询红包领取信息 -->
+	<select id="getEnvelopeReceive" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		receiveId = #{receiveId}
+	</select>
+	
+	<!-- 根据会员编号查询红包领取DTO -->
+	<select id="getCountDataSet" parameterType="int" resultMap="dtoResultMap">
+		select
+		((select ifnull(sum(price), 0) 
+		    from FM_EnvelopeReceive 
+		  where status in (1, 2) and isValid = 1 and memberId = #{memberId}) - 
+		 (select ifnull(sum(price), 0) 
+		    from FM_EnvelopeCash a 
+		   where exists (select 1 
+		                   from FM_EnvelopeReceive b 
+		                  where a.receiveId = b.receiveId 
+		                    and b.status = 2 
+		                    and b.isValid = 1 
+		                    and memberId = #{memberId}) and a.isValid = 1)) cashAmount,
+		case when (select count(1) 
+		             from SM_Branch a, MM_Member b, FM_EnvelopeSwitch c  
+		            where a.branchCityId = b.cityId 
+		              and a.status = 1 
+		              and b.isValid = 1 
+		              and b.memberId = #{memberId}  
+		              and a.branchId = c.branchId 
+		              and c.switchStatus = 1)= 0 
+             then 0 
+             else                    
+		        ((select ifnull(upperPrive, 0) 
+		            from SM_Branch a, MM_Member b 
+		           where a.branchCityId = b.cityId and a.status = 1 and b.isValid = 1 and b.memberId = #{memberId}) - 
+		        (select ifnull(sum(price), 0) 
+		           from FM_EnvelopeReceive 
+		          where status in (1, 2, 3) and isValid = 1 and memberId = #{memberId})) 
+		     end notActivation,
+		(select ifnull(sum(price), 0) 
+		   from FM_EnvelopeReceive 
+		  where status in (1, 2, 3) and isValid = 1 and memberId = #{memberId}) gain 
+	</select>
+	
+	<!-- 按城市查询代理商旗下所有楼盘消耗红包总数 -->
+	<select id="getSumPriceNum" parameterType="map" resultType="BigDecimal">
+		select SUM(price) from FM_EnvelopeReceive  
+			where status !=0 and isValid=1 and buildingId in(
+				select buildingId from BM_Building 
+					where agentId in
+					   (select userId from SM_User 
+						   <where>
+							   <if test="branchId != null">
+							   		branchId = #{branchId}
+							   </if>
+						   </where>
+					    )
+				)
+	</select>
+	
+	<!-- 按城市查询代理商旗下所有楼盘加入计划总数 -->
+	<select id="getPlanNum" parameterType="map" resultType="Integer">
+		select COUNT(planId) planNum from PM_Plan 
+				where isValid =1 and buildingId in(
+	       	    select buildingId from BM_Building 
+					where agentId in
+					   (select userId from SM_User 
+						   <where>
+							   <if test="branchId != null">
+							   		branchId = #{branchId}
+							   </if>
+						   </where>
+					    )
+					)
+	</select>
+	
+	<!-- 按城市查询代理商旗下所有楼盘到访总数 -->
+	<select id="getVisitNum" parameterType="map" resultType="Integer">
+		select COUNT(salerCustomerId) visitNum from PM_SalerCustomer 
+				where isValid =1
+				and buildingId in(
+	       	    select buildingId from BM_Building 
+					where agentId in
+					   (select userId from SM_User 
+						   <where>
+							   <if test="branchId != null">
+							   		branchId = #{branchId}
+							   </if>
+						   </where>
+					    )
+					)
+	</select>
+	
+	<!-- 根据会员编号分页查询交易记录红包领取信息 -->
+	<select id="findEnvelopeDealReceiveDataSet" parameterType="map" resultMap="dealResultMap">
+		select 
+		rece.createTime receiveTime, 
+		rece.price price, 
+		rece.envelopeType envelopeType  
+		from 
+		FM_EnvelopeReceive rece
+		where 
+		rece.memberId = #{memberId} 
+		and 
+		rece.isValid = 1 
+		and 
+		rece.status in (1, 2, 3)  
+		order by rece.createTime desc 
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据会员编号分页查询交易记录红包领取信息 -->
+	<select id="countEnvelopeDealReceiveDataSet" parameterType="int" resultType="Integer">
+		select 
+		count(rece.price)
+		from 
+		FM_EnvelopeReceive rece
+		where 
+		rece.memberId = #{memberId} 
+		and 
+		rece.isValid = 1 
+		and 
+		rece.status in (1, 2, 3)  
+	</select>
+	
+	<!-- 根据会员编号分页查询现金红包领取信息 -->
+	<select id="findReadyEnvelopeReceiveDataSet" parameterType="map" resultMap="readyResultMap">
+		select 
+		rece.price price, 
+		b.buildingName buildingName, 
+		case when rece.envelopeType = 0 then '看房' else '评论' end as type 
+		from FM_EnvelopeReceive rece
+		left join BM_Building b on rece.buildingId = b.buildingId 
+		where 
+		memberId = #{memberId} 
+		and 
+		rece.isValid = 1 
+		and 
+		rece.status in (1, 2, 3)   
+		order by rece.createTime desc 
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 统计根据会员编号查询现金红包领取条目数 -->
+	<select id="countReadyEnvelopeReceiveDataSet" parameterType="Integer" resultType="Integer">
+		select 
+		count(rece.price)
+		from FM_EnvelopeReceive rece 
+		left join BM_Building b on rece.buildingId = b.buildingId  
+		where 
+		memberId = #{memberId} 
+		and 
+		rece.isValid = 1 
+		and 
+		rece.status in (1, 2, 3) 
+	</select>
+	
+	<!-- 某楼盘一年内按月分组，查询红包消耗统计 -->
+	<select id="findBuildingEnvelopeStatistical" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.fm.EnvelopeStatisticalDatoSet">
+		select DATE_FORMAT(t1.updateTime,'%Y-%m') month , 
+			IFNULL(SUM(t1.price),0) sumPriceNum 
+		from FM_EnvelopeReceive t1
+		LEFT JOIN FM_EnvelopeRecharge t2 on t1.envelopeId = t2.envelopeId
+		where 
+		<![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(t1.updateTime)]]> 
+		and t2.type =0 
+		and t1.status != 0
+		and t1.buildingId = (select buildingId from SM_UserBuilding where userId = #{userId}) 
+		group by month
+		order by month
+	</select>
+	
+	<!--  楼盘管理后台_财务管理——红包消耗-交易记录列表-->
+	<select id="findEnvelopeReceiveList" parameterType="map" resultMap="baseResultMap">
+		select t1.*, t3.account, t3.nickName, t5.name
+		from FM_EnvelopeReceive t1
+		LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+		LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+		LEFT JOIN SM_User t5 on t4.userId = t5.userId
+		where  t1.envelopeType= 0 
+		and t1.status != 0
+		and t1.buildingId = (select buildingId from SM_UserBuilding where userId = #{userId})
+		<if test="keyword != null">
+	        and (t3.account like '%${keyword}%'
+	        or t3.nickName like '%${keyword}%'
+	        or t5.name like '%${keyword}%')
+	     </if>
+		<if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	    </if>
+			ORDER BY t1.updateTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 楼盘管理后台_财务管理——红包消耗-交易记录列表总数 -->
+	<select id="getEnvelopeReceiveDataCount" parameterType="map" resultType="Integer">
+		select count(t1.receiveId)
+		from FM_EnvelopeReceive t1
+		LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+		LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+		LEFT JOIN SM_User t5 on t4.userId = t5.userId
+		where  t1.envelopeType= 0
+		and t1.status != 0
+		and t1.buildingId = (select buildingId from SM_UserBuilding where userId = #{userId})
+		<if test="keyword != null">
+	        and (t3.account like '%${keyword}%'
+	        or t3.nickName like '%${keyword}%'
+	        or t5.name like '%${keyword}%')
+	     </if>
+		<if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	    </if>
+	</select>
+	
+	<!-- 手机端提现申请_根据会员编号和提现状态查询红包领取表信息 -->
+	<select id="findEnvelopeReceiveByMemberIdAndStatus" parameterType="Int" resultMap="baseResultMap">
+		SELECT 
+		<include refid="baseColumns" /> 
+		FROM 
+		<include refid="tableName" /> 
+		WHERE 
+		memberId = #{memberId} 
+		AND 
+		( status = 1 OR status = 2 )
+		ORDER BY createTime ASC, status DESC
+	</select>
+	
+	<!-- 手机端提现申请_根据会员编号和提现状态查询红包领取表信息 -->
+	<select id="findEnvelopeReceiveByMemberAndBuildingId" parameterType="map" resultMap="baseResultMap">
+		SELECT 
+		<include refid="baseColumns" /> 
+		FROM 
+		<include refid="tableName" /> 
+		WHERE 
+		memberId = #{memberId} 
+		AND 
+		buildingId = #{buildingId}
+	</select>
+	
+	<!-- 根据会员编号查询可生成红包金额 -->
+	<select id="getAmountOfRedPacketsCanBeGenerated" parameterType="Int" resultType="com.jzhl.kfsq.dataset.fm.Amount">
+		SELECT
+		(
+			SELECT
+				b.upperPrive
+			FROM
+				SM_Branch b,
+				MM_Member m
+			WHERE
+				m.memberId = #{memberId}
+			AND b.branchCityId = m.cityId
+		) - (
+			SELECT
+				ifnull(sum(price), 0)
+			FROM
+				FM_EnvelopeReceive
+			WHERE
+				STATUS IN (1, 2, 3)
+			AND isValid = 1
+			AND memberId = #{memberId}
+		) AS price
+	</select>
+	
+	<!-- 查询置业顾问的客户红包 -->
+	<select id="getEnvelopeBySalerAndMember" parameterType="com.jzhl.kfsq.dto.fm.SalerMemberDto" resultType="com.jzhl.kfsq.dataset.fm.Amount">
+		SELECT
+		IFNULL(
+			(
+				SELECT
+					price
+				FROM
+					FM_EnvelopeReceive
+				WHERE
+					envelopeType = 0
+				AND salerCustomerId IN (
+					SELECT
+						salerCustomerId
+					FROM
+						PM_SalerCustomer
+					WHERE
+						userId = #{userId}
+				)
+				AND memberId = #{memberId}
+			),
+			0
+		) AS price
+	</select>
+	
+</mapper>

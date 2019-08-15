@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IEducationScoreDetailMapper">
+	
+	<!-- 根据楼盘编号查询教育分数详情 -->
+	<select id="getEducationScoreDetail" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.EducationScoreDetail">
+		SELECT
+			bmb.buildingId buildingId,
+			bmb.buildingName buildingName,
+			bmb.longitude longitude,
+			bmb.latitude latitude,
+			bmbei.educationImg educationImg,
+			ifnull(babs.educationScore, 0) educationScore,
+			ifnull((
+				SELECT
+					COUNT(memberId)
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BA_MemberEvaluate
+						WHERE
+							buildingId = #{buildingId}
+						AND dimensionCode = 'education'
+						AND isValid = 1
+						GROUP BY
+							memberId
+					) a
+			), 0) countMember
+		FROM
+			BM_Building bmb 
+		LEFT JOIN BM_BuildingExtendImage bmbei ON bmb.buildingId = bmbei.buildingId 
+		LEFT JOIN BA_BuildingScore babs ON bmb.buildingId = babs.buildingId 
+		WHERE
+			bmb.buildingId = #{buildingId}
+		AND bmb.isValid = 1
+		AND bmbei.isValid = 1
+		AND babs.isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号和学校类型查询学校信息 -->
+	<select id="findEducationDataSetByBuildingIdAndType" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.EducationScoreDataSet">
+		SELECT
+			educationId,
+		    schoolName,
+		    distance,
+		    longitude,
+		    latitude
+		FROM
+			BM_Education
+		WHERE
+			buildingId = #{buildingId}
+		AND distance <![CDATA[ <= ]]> #{distance}
+		AND isValid = 1
+		AND type = #{type}
+		ORDER BY
+			distance
+		LIMIT 10
+	</select>
+	
+	<!-- 根据楼盘ID查询优质学校信息 -->
+	<select id="findHighQualitySchoolDataSetBybuildingId" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.EducationScoreDataSet">
+		SELECT
+			bme.educationId,
+			bme.schoolName, 
+			bme.distance, 
+			bme.longitude, 
+			bme.latitude
+		FROM
+			BM_Education bme
+		WHERE
+			 EXISTS (
+		 			SELECT
+		 				*
+		 			FROM
+		 				SM_Dictionary smd
+		 			WHERE
+		 				smd.Name = bme.schoolName
+		 			AND smd.type = 3
+		 			AND smd.isValid = 1
+		 			)
+			AND bme.distance <![CDATA[ <= ]]> 1500
+			AND bme.buildingId = #{buildingId}
+			AND bme.isValid = 1
+			AND bme.type = 1
+		ORDER BY
+			distance
+		LIMIT 10
+	</select>
+	
+		<!-- 根据楼盘ID查询普通学校信息 -->
+	<select id="findNormalSchoolDataSetBybuildingId" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.EducationScoreDataSet">
+		SELECT
+			bme.educationId,
+			bme.schoolName, 
+			bme.distance, 
+			bme.longitude, 
+			bme.latitude
+		FROM
+			BM_Education bme
+		WHERE
+			 NOT EXISTS (
+					SELECT
+						*
+					FROM			
+						SM_Dictionary smd
+					WHERE
+                		smd.Name = bme.schoolName
+            			AND smd.type = 3
+               			AND smd.isValid = 1
+					)
+		AND bme.distance <![CDATA[ <= ]]> 1500
+		AND bme.buildingId = #{buildingId}
+		AND bme.isValid = 1
+		AND bme.type = 1
+		ORDER BY
+			distance
+		LIMIT 10
+	</select>
+	
+</mapper> 

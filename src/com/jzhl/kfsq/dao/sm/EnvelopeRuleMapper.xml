@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IEnvelopeRuleMapper">
+
+	<resultMap id="smEnveloperuleResultMap" type="com.jzhl.kfsq.entity.sm.EnvelopeRule">
+		<id property="ruleId" column="ruleId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="scancodePrice" column="scancodePrice" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smEnveloperuleResultMap"></resultMap>
+	
+	<sql id="baseColumns">
+		ruleId,
+		buildingId,
+		scancodePrice,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+	</sql>
+
+	<insert id="insertEnvelopeRule" parameterType="com.jzhl.kfsq.entity.sm.EnvelopeRule">
+	   insert into SM_EnvelopeRule (
+	     buildingId,
+	     scancodePrice,
+	     creatorUserId,
+	     createTime,
+	     updateUserId,
+	     updateTime,
+	     isValid
+	   )values (
+	     #{buildingId},
+	     #{scancodePrice},
+	     #{creatorUserId},
+	     now(),
+	     #{updateUserId},
+	     #{updateTime},
+	     #{isValid}
+	   )
+	</insert>
+
+	<update id="updateEnvelopeRule" parameterType="com.jzhl.kfsq.entity.sm.EnvelopeRule">
+	   update SM_EnvelopeRule set updateTime=now(),
+	     buildingId=#{buildingId},
+	     scancodePrice=#{scancodePrice},
+	     updateUserId=#{updateUserId},
+	     isValid=#{isValid}
+	   where 
+	    ruleId=#{ruleId} 
+	</update>
+
+	<select id="find" parameterType="map" resultMap="findResultMap">
+	   select 
+	     ruleId,
+	     buildingId,
+	     scancodePrice,
+	     creatorUserId,
+	     createTime,
+	     updateUserId,
+	     updateTime,
+	     isValid
+	   from SM_EnvelopeRule
+	   <where>
+	     <if test="ruleId != null">
+	        ruleId=#{ruleId}
+	     </if>
+	     <if test="rechargeId != null">
+	        and rechargeId=#{rechargeId}
+	     </if>
+	     <if test="scancodePrice != null">
+	        and scancodePrice=#{scancodePrice}
+	     </if>
+	     <if test="creatorUserId != null">
+	        and creatorUserId=#{creatorUserId}
+	     </if>
+	     <if test="createTime != null">
+	        and createTime=#{createTime}
+	     </if>
+	     <if test="updateUserId != null">
+	        and updateUserId=#{updateUserId}
+	     </if>
+	     <if test="updateTime != null">
+	        and updateTime=#{updateTime}
+	     </if>
+	     <if test="isValid != null">
+	        and isValid=#{isValid}
+	     </if>
+	   </where>
+	</select>
+	
+	<!-- 根据楼盘编号查询看房红包规则 -->
+	<select id="getRuleByBuildingId" parameterType="Int" resultMap="smEnveloperuleResultMap">
+	   select 
+	   <include refid="baseColumns" /> 
+	   from SM_EnvelopeRule
+	   where
+	   buildingId = #{buildingId}
+	   and
+	   isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号查询看房红包规则（包括有效和无效） -->
+	<select id="getRuleByBuildingIdAllStatus" parameterType="Int" resultMap="smEnveloperuleResultMap">
+	   select 
+	   <include refid="baseColumns" /> 
+	   from SM_EnvelopeRule
+	   where
+	   buildingId = #{buildingId}
+	</select>
+	
+</mapper> 

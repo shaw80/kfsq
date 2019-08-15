@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IAppRemindMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.cm.AppRemindDataSet" id="baseResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="content" column="content" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="nickName" column="nickName" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="type" column="type" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		t.commentId,
+		t.content,
+		t.creatorUserId,
+		t.createTime,
+		t.nickName,
+		t.headPortrait,
+		t.type
+	</sql>
+	
+	<sql id="buildingColumns">
+		cmbc.commentId as commentId,
+		cmbc.content as content,
+		cmbc.creatorUserId as creatorUserId,
+		cmbc.createTime as createTime,
+		mmm.nickName as nickName,
+		mmm.headPortrait as headPortrait,
+		'building' as type
+	</sql>
+	
+		
+	<sql id="chatColumns">
+		cmcc.commentId as commentId,
+		cmcc.content as content,
+		cmcc.creatorUserId as creatorUserId,
+		cmcc.createTime as createTime,
+		mmm.nickName as nickName,
+		mmm.headPortrait as headPortrait,
+		'chat' as type
+	</sql>
+	
+	
+	<sql id="buildingTables">
+		CM_BuildingComment cmbc, MM_Member mmm
+	</sql>
+	
+	
+	<sql id="chatTables">
+		CM_ChatComment cmcc, MM_Member mmm
+	</sql>
+	
+	
+	<select id="findAppRemindPage" parameterType="com.jzhl.kfsq.dto.cm.AppRemindPageDto" resultMap="baseResultMap">
+		select 
+			<include refid="baseColumns" /> 
+		from (
+			select
+				<include refid="buildingColumns" />
+			from
+				<include refid="buildingTables" />
+			where 
+				cmbc.creatorUserId = mmm.memberId 
+				and cmbc.replyParentUserId = #{replyParentUserId}
+				and cmbc.createTime > #{lastTime}
+			union
+			select
+				<include refid="chatColumns" />
+			from
+				<include refid="chatTables" />
+			where 
+				cmcc.creatorUserId = mmm.memberId 
+				and cmcc.replyParentUserId = #{replyParentUserId}
+				and cmcc.createTime > #{lastTime}
+		) t
+		order by t.createTime desc
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	<select id="findAppRemindPageCount" parameterType="com.jzhl.kfsq.dto.cm.AppRemindPageDto" resultType="java.lang.Integer">
+		select count(t.commentId) from (
+			select
+				<include refid="buildingColumns" />
+			from
+				<include refid="buildingTables" />
+			where 
+				cmbc.creatorUserId = mmm.memberId 
+				and cmbc.replyParentUserId = #{replyParentUserId}
+				and cmbc.createTime > #{lastTime}
+			union
+			select
+				<include refid="chatColumns" />
+			from
+				<include refid="chatTables" />
+			where 
+				cmcc.creatorUserId = mmm.memberId 
+				and cmcc.replyParentUserId = #{replyParentUserId}
+				and cmcc.createTime > #{lastTime}
+		) t
+	</select>
+</mapper>

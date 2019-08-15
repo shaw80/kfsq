@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IBuildingRemindInfoMapper">
+
+	<resultMap id="smBuildingremindinfoResultMap" type="com.jzhl.kfsq.entity.sm.BuildingRemindInfo">
+		<id property="buildingRemindId" column="buildingRemindId" />
+		<result property="branchId" column="branchId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="content" column="content" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smBuildingremindinfoResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smBuildingremindinfoResultMap"></resultMap>
+
+	<!-- 插入数据 -->
+	<insert id="insertData" parameterType="com.jzhl.kfsq.entity.sm.BuildingRemindInfo">
+	   insert into SM_BuildingRemindInfo (
+	     buildingRemindId,
+	     branchId,
+	     buildingId,
+	     content,
+	     creatorUserId,
+	     createTime
+	   )values (
+	     #{buildingRemindId},
+	     #{branchId},
+	     #{buildingId},
+	     #{content},
+	     #{creatorUserId},
+	     now()
+	   )
+	</insert>
+	
+	<!-- 清空表数据 -->
+	<delete id="deleteData">
+		delete from SM_BuildingRemindInfo;
+	</delete>
+	
+	<!-- 分页查询提醒列表 -->
+	<select id="findBuildingRemindInfoList" parameterType="map" resultMap="findResultMap">
+		select t1.*, t2.buildingName, t4.name, t4.mobilePhone
+		from SM_BuildingRemindInfo t1 
+		LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+		LEFT JOIN SM_UserBuilding t3 on t1.buildingId = t3.buildingId 
+		LEFT JOIN SM_User t4 on  t3.userId = t4.userId
+		where 
+			t4.appUserType=0
+			and t1.branchId =#{branchId}
+				ORDER BY t1.createTime desc 
+				limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 提醒列表总数 -->
+	<select id="getBuildingRemindInfoDataCount" parameterType="map" resultType="Integer">
+		select COUNT(buildingRemindId)
+		from SM_BuildingRemindInfo t1 
+		LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+		LEFT JOIN SM_UserBuilding t3 on t1.buildingId = t3.buildingId 
+		LEFT JOIN SM_User t4 on  t3.userId = t4.userId
+		where 
+			t4.appUserType=0
+			and t1.branchId =#{branchId} 
+	</select>
+	
+</mapper> 

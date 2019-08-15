@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IAccountMapper">
+
+	<resultMap id="smAccountResultMap" type="com.jzhl.kfsq.entity.sm.Account">
+		<id property="accountId" column="accountId" />
+		<result property="accountType" column="accountType" />
+		<result property="userType" column="userType" />
+		<result property="userId" column="userId" />
+		<result property="accountNum" column="accountNum" />
+		<result property="accountName" column="accountName" />
+		<result property="openBank" column="openBank" />
+		<result property="isDefault" column="isDefault" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		accountId,
+		accountType,
+		userType,
+		userId,
+		accountNum,
+		accountName,
+		openBank,
+		isDefault,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_Account
+    </sql>
+
+	<!-- 添加账户信息 -->
+	<insert id="insertAccount" parameterType="com.jzhl.kfsq.entity.sm.Account">
+	<selectKey resultType="java.lang.Integer" keyProperty="accountId" order="AFTER" >
+    	SELECT @@IDENTITY
+  	</selectKey>
+	   insert into 
+	   <include refid="tableName" />
+	   (
+	   	 <if test="accountType != null">
+			accountType,
+		 </if>
+		 <if test="userType != null">
+			userType,
+		 </if>
+		 <if test="userId != null">
+			userId,
+		 </if>
+		 <if test="accountNum != null">
+			accountNum,
+		 </if>
+		 <if test="openBank != null">
+			openBank,
+		 </if>
+		 <if test="isDefault != null">
+			isDefault,
+		 </if>
+		 <if test="creatorUserId != null">
+			creatorUserId,
+		 </if>
+	     <if test="createTime != null">
+			createTime,
+		 </if>
+		 <if test="accountName != null">
+			accountName,
+		 </if>
+	     isValid
+	   )
+	   values 
+	   (
+	     <if test="accountType != null">
+			#{accountType},
+		 </if>
+		 <if test="userType != null">
+			#{userType},
+		 </if>
+		 <if test="userId != null">
+			#{userId},
+		 </if>
+		 <if test="accountNum != null">
+			#{accountNum},
+		 </if>
+		 <if test="openBank != null">
+			#{openBank},
+		 </if>
+	     <if test="isDefault != null">
+			#{isDefault},
+		 </if>
+	     <if test="creatorUserId != null">
+			#{creatorUserId},
+		 </if>
+	     <if test="createTime != null">
+			now(),
+		 </if>
+		 <if test="accountName != null">
+			#{accountName},
+		 </if>
+	     1
+	   )
+	</insert>
+	
+	<!-- 删除账户信息 -->
+	<update id="deleteAccount" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		accountId = #{accountId}
+	</update>
+	
+	<!-- 更新账户信息 -->
+	<update id="updateAccount" parameterType="com.jzhl.kfsq.entity.sm.Account">
+		update 
+		<include refid="tableName" /> 
+		set
+		updateUserId = #{updateUserId}
+		,updateTime = now()
+		<if test="accountType != null">
+			,accountType = #{accountType}
+		</if>
+		<if test="userType != null">
+			,userType = #{userType}
+		</if>
+		<if test="userId != null">
+			,userId = #{userId}
+		</if>
+		<if test="accountNum != null">
+			,accountNum = #{accountNum}
+		</if>
+		<if test="accountName != null">
+			,accountName = #{accountName}
+		</if>
+		<if test="openBank != null">
+			,openBank = #{openBank}
+		</if>
+		<if test="isDefault != null">
+			,isDefault = #{isDefault}
+		</if>
+		where
+		accountId = #{accountId}
+	</update>
+	
+	<!-- 根据账户编号查询账户信息 -->
+	<select id="getAccount" parameterType="int" resultMap="smAccountResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		accountId = #{accountId}
+		and
+		isValid = 1
+	</select>
+	
+	<!-- 根据用户编号查询账户信息 -->
+	<select id="getAccountByUserId" parameterType="map" resultMap="smAccountResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		userId = #{userId}
+		and
+		userType = #{userType}
+		<if test="accountType != null" >
+			and accountType = #{accountType}
+		</if>		
+		and
+		isValid = 1
+	</select>
+	
+	<!-- 根据支付宝等账户查询账户信息 -->
+	<select id="getMemberByAccountNum" parameterType="map" resultType="com.jzhl.kfsq.entity.mm.Member">
+		SELECT
+			m.memberId,
+			m.phone
+		FROM
+			SM_Account a,
+			MM_Member m
+		WHERE
+			a.accountNum = #{accountNum}
+		AND a.userType = #{userType}
+		AND a.accountType = #{accountType}
+		AND a.isValid = 1
+		AND a.userId = m.memberId
+		AND m.isValid = 1
+	</select>
+	
+</mapper> 

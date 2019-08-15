@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IBuildingCommentDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.cm.BuildingCommentDataSet" id="baseResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="parentCommentId" column="parentCommentId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="content" column="content" />
+		<result property="headerImgPath" column="headerImgPath" />
+		<result property="nickName" column="nickName" />
+		<result property="isTop" column="isTop" />
+		<result property="auditStatus" column="auditStatus" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="replyParentUserId" column="replyParentUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="commentCount" column="commentCount" />
+		<result property="planTime" column="planTime" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.cm.CommentReplyDataSet" id="replyResultMap">
+		<id property="replycommentId" column="replycommentId" />
+		<result property="replyContent" column="replyContent" />
+		<result property="replyMemberName" column="replyMemberName" />
+		<result property="replyMemberHeadPortrait" column="replyMemberHeadPortrait" />
+		<result property="replyParentMemberName" column="replyParentMemberName" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		cmbc.commentId commentId,
+		cmbc.parentCommentId parentCommentId,
+		cmbc.content content,
+		cmbc.creatorUserId creatorUserId,
+		cmbc.createTime createTime,
+		(case when cmbc.creatorUserId is null then cmbc.headPortrait else mmm.headPortrait end) as headPortrait,
+		(case when cmbc.creatorUserId is null then cmbc.userName else mmm.nickName end) as nickName,
+		count(cmbc2.parentCommentId) as commentCount,
+		cmbc.auditStatus auditStatus,
+		pmp.createTime as planTime
+	</sql>
+	
+	<select id="findBuildingCommentPage" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentPageDto" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from CM_BuildingComment cmbc
+		left join CM_BuildingComment cmbc2 on cmbc.commentId = cmbc2.parentCommentId
+		inner join MM_Member mmm on mmm.memberId = cmbc.creatorUserId and mmm.isValid = 1
+		inner join PM_Plan pmp on pmp.buildingId = cmbc.buildingId and cmbc.creatorUserId = pmp.creatorUserId and pmp.status = 2 and pmp.isValid = 1
+		where cmbc.parentCommentId = 0
+		and cmbc.isValid = 1 and  (cmbc2.isValid = 1 or cmbc2.isValid is null)
+		and (cmbc2.parentCommentId is null or cmbc2.parentCommentId != 0)
+		AND ( cmbc.auditStatus = 1 OR cmbc.auditStatus = 0 )
+		<if test="lastTime != null">
+			and cmbc.createTime > #{lastTime}
+		</if>
+		<if test="buildingId != null">
+			and cmbc.buildingId = #{buildingId}
+		</if>
+		group by cmbc.commentId
+		order by cmbc.createTime desc
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	<select id="findBuildingCommentPageCount" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentPageDto" resultType="java.lang.Integer">
+		select count(cmbc.commentId)
+		from CM_BuildingComment cmbc, MM_Member mmm, PM_Plan pmp
+		where cmbc.isValid = 1 and pmp.status = 2 and pmp.isValid = 1 and mmm.isValid = 1
+		and pmp.buildingId = cmbc.buildingId
+		and mmm.memberId = cmbc.creatorUserId
+		and cmbc.parentCommentId = 0
+		AND ( cmbc.auditStatus = 1 OR cmbc.auditStatus = 0 )
+		<if test="lastTime != null">
+			and cmbc.createTime > #{lastTime}
+		</if>
+		<if test="buildingId != null">
+			and cmbc.buildingId = #{buildingId}
+		</if>
+	</select>
+	
+	<select id="findBuildingCommentPageByAuditStatus" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentPageDto" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from CM_BuildingComment cmbc
+		left join CM_BuildingComment cmbc2 on cmbc.commentId = cmbc2.parentCommentId
+		inner join MM_Member mmm on mmm.memberId = cmbc.creatorUserId and mmm.isValid = 1
+		inner join PM_Plan pmp on pmp.buildingId = cmbc.buildingId and cmbc.creatorUserId = pmp.creatorUserId and pmp.status = 2 and pmp.isValid = 1
+		where cmbc.parentCommentId = 0
+		and cmbc.isValid = 1 and  (cmbc2.isValid = 1 or cmbc2.isValid is null)
+		and (cmbc2.parentCommentId is null or cmbc2.parentCommentId != 0)
+		<if test="lastTime != null">
+			and cmbc.createTime > #{lastTime}
+		</if>
+		<if test="creatorUserId != null">
+		AND
+		(	
+			cmbc.parentCommentId = 0
+			and cmbc.isValid = 1 and  (cmbc2.isValid = 1 or cmbc2.isValid is null)
+			and (cmbc2.parentCommentId is null or cmbc2.parentCommentId != 0)
+			and cmbc.buildingId = #{buildingId}
+			and cmbc.creatorUserId = #{creatorUserId}
+			and ( cmbc.auditStatus = 0 OR cmbc.auditStatus = 1 )
+		)
+		OR 
+		( 
+			cmbc.buildingId = #{buildingId}
+			and cmbc.auditStatus = 1
+			and cmbc.isValid = 1
+			AND cmbc.parentCommentId = 0
+		)
+		</if>
+		<if test="creatorUserId == null">
+			and cmbc.buildingId = #{buildingId}
+			and cmbc.auditStatus = 1
+			and cmbc.isValid = 1
+		</if>
+		group by cmbc.commentId
+		order by cmbc.createTime desc
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	<select id="findBuildingCommentPageCountByAuditStatus" parameterType="com.jzhl.kfsq.dto.cm.BuildingCommentPageDto" resultType="java.lang.Integer">
+		SELECT
+		COUNT(result.commentId)
+		FROM
+		(
+			select
+			<include refid="baseColumns" />
+			from CM_BuildingComment cmbc
+			left join CM_BuildingComment cmbc2 on cmbc.commentId = cmbc2.parentCommentId
+			inner join MM_Member mmm on mmm.memberId = cmbc.creatorUserId and mmm.isValid = 1
+			inner join PM_Plan pmp on pmp.buildingId = cmbc.buildingId and cmbc.creatorUserId = pmp.creatorUserId and pmp.status = 2 and pmp.isValid = 1
+			where cmbc.parentCommentId = 0
+			and cmbc.isValid = 1 and  (cmbc2.isValid = 1 or cmbc2.isValid is null)
+			and (cmbc2.parentCommentId is null or cmbc2.parentCommentId != 0)
+			<if test="lastTime != null">
+				and cmbc.createTime > #{lastTime}
+			</if>
+			<if test="creatorUserId != null">
+			AND
+			(	
+				cmbc.parentCommentId = 0
+				and cmbc.isValid = 1 and  (cmbc2.isValid = 1 or cmbc2.isValid is null)
+				and (cmbc2.parentCommentId is null or cmbc2.parentCommentId != 0)
+				and cmbc.buildingId = #{buildingId}
+				and cmbc.creatorUserId = #{creatorUserId}
+				and ( cmbc.auditStatus = 0 OR cmbc.auditStatus = 1 )
+			)
+			OR 
+			( 
+				cmbc.buildingId = #{buildingId}
+				and cmbc.auditStatus = 1
+				and cmbc.isValid = 1
+				AND cmbc.parentCommentId = 0
+			)
+			</if>
+			<if test="creatorUserId == null">
+				and cmbc.buildingId = #{buildingId}
+				and cmbc.auditStatus = 1
+				and cmbc.isValid = 1
+			</if>
+			group by cmbc.commentId
+			order by cmbc.createTime desc
+		) result
+	</select>
+	
+	<select id="getBuildingCommentDataSet" parameterType="java.lang.Integer" resultMap="baseResultMap">
+		select 		
+			cmbc.commentId,
+			cmbc.parentCommentId,
+			cmbc.buildingId,
+			cmbc.content,
+			cmbc.creatorUserId,
+			cmbc.createTime,
+			mmm.headPortrait,
+			mmm.nickName
+		from CM_BuildingComment cmbc, MM_Member mmm
+		where mmm.memberId = cmbc.creatorUserId
+		and cmbc.commentId = #{commentId}
+	</select>
+	
+	<select id="findBuildingCommentReplyPage" parameterType="com.jzhl.kfsq.dto.cm.CommentReplyDto" resultMap="replyResultMap">
+		select 
+			cbcc.commentId as replycommentId, 
+			cbcc.content as replyContent, 
+			mmm.NickName as replyMemberName, 
+			mmm.headPortrait as replyMemberHeadPortrait, 
+			rmmm.NickName as replyParentMemberName 
+			from CM_BuildingComment cbcc
+		inner join MM_Member mmm on cbcc.creatorUserId = mmm.memberId and mmm.isValid = 1
+		left join MM_Member rmmm on cbcc.replyparentUserId = rmmm.memberId and rmmm.isValid = 1
+		where 
+		      cbcc.parentCommentId = #{commentId} 
+		      and cbcc.isValid = 1
+			  and cbcc.auditStatus = 1
+		<if test="memberId != null">
+		 	 UNION 
+			(
+				select 
+					cbcc.commentId as replycommentId, 
+					cbcc.content as replyContent, 
+					mmm.NickName as replyMemberName, 
+					mmm.headPortrait as replyMemberHeadPortrait, 
+					rmmm.NickName as replyParentMemberName 
+					from CM_BuildingComment cbcc
+				inner join MM_Member mmm on cbcc.creatorUserId = mmm.memberId and mmm.isValid = 1
+				left join MM_Member rmmm on cbcc.replyparentUserId = rmmm.memberId and rmmm.isValid = 1
+				where cbcc.parentCommentId = #{commentId} 
+		        and cbcc.isValid = 1
+				and cbcc.creatorUserId = #{memberId}
+			)
+		</if>
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	
+	<select id="findBuildingCommentReplyCount" parameterType="com.jzhl.kfsq.dto.cm.CommentReplyDto" resultType="java.lang.Integer">
+		select 
+			count(commentId)
+		from 
+		(SELECT * 
+				from 
+					CM_BuildingComment
+				where 
+				     parentCommentId = #{commentId}
+					 and isValid = 1
+				     and auditStatus = 1
+			<if test="memberId != null">
+					 	 UNION 
+						(
+							select * 
+								from 
+						    CM_BuildingComment
+								where parentCommentId = #{commentId}
+						        and isValid = 1
+								and creatorUserId = #{memberId}
+						)
+			
+			</if>
+		) as aaa   
+	</select>
+	
+</mapper>

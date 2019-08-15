@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IEnvelopeSwitchMapper">
+
+	<resultMap id="EnvelopeSwitchResultMap" type="com.jzhl.kfsq.entity.fm.EnvelopeSwitch">
+		<id property="switchId" column="switchId" />
+		<result property="branchId" column="branchId" />
+		<result property="switchType" column="switchType" />
+		<result property="switchStatus" column="switchStatus" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="EnvelopeSwitchResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="EnvelopeSwitchResultMap"></resultMap>
+
+	<insert id="insertEnvelopeSwitch" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeSwitch">
+	   insert into FM_EnvelopeSwitch (
+	     branchId,
+	     switchType,
+	     switchStatus,
+	     updateUserId,
+	     updateTime,
+	     isValid
+	   )values (
+	     #{branchId},
+	     #{switchType},
+	     #{switchStatus},
+	     #{updateUserId},
+	     now(),
+	     1
+	   )
+	</insert>
+
+	<!-- 设置红包状态 -->
+	<update id="updateEnvelopeSwitch" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeSwitch">
+	   update FM_EnvelopeSwitch set
+	     switchStatus=#{switchStatus},
+	     updateTime=now(),
+	     <if test = "updateUserId != null">
+		     updateUserId=#{updateUserId}
+	     </if>
+	   <where>
+	   	 <if test="switchId != null">
+	        switchId=#{switchId}
+	     </if>
+	     <if test="branchId != null">
+	        and branchId=#{branchId}
+	     </if>
+	     <if test="switchType != null">
+	        and switchType=#{switchType}
+	     </if>
+	   </where> 
+	</update>
+
+	<select id="getEnvelopeSwitchInfo" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeSwitch" resultType="com.jzhl.kfsq.entity.fm.EnvelopeSwitch">
+	   select 
+	     switchId,
+	     branchId,
+	     switchType,
+	     switchStatus,
+	     updateUserId,
+	     updateTime,
+	     isValid
+	   from FM_EnvelopeSwitch
+	   <where>
+	     <if test="switchId != null">
+	        switchId=#{switchId}
+	     </if>
+	     <if test="branchId != null">
+	        and branchId=#{branchId}
+	     </if>
+	     <if test="switchType != null">
+	        and switchType=#{switchType}
+	     </if>
+	     <if test="switchStatus != null">
+	        and switchStatus=#{switchStatus}
+	     </if>
+	     <if test="updateUserId != null">
+	        and updateUserId=#{updateUserId}
+	     </if>
+	     <if test="updateTime != null">
+	        and updateTime=#{updateTime}
+	     </if>
+	     <if test="isValid != null">
+	        and isValid=#{isValid}
+	     </if>
+	   </where>
+	</select>
+	
+	<!-- 根据楼盘编号和开关类型查询总开关信息 -->
+	<select id="getSwitchByBuildingIdAndSwitchType" parameterType="map" resultMap="EnvelopeSwitchResultMap">
+		SELECT
+			branchId,
+			switchId,
+			switchType,
+			CASE switchStatus
+		WHEN #{switchType} = 0 
+		AND (
+			(
+				<![CDATA[ date_format(now(), '%Y-%m-%d') < date_format(
+					(
+						SELECT
+							cec.beginTime
+						FROM
+							FM_EnvelopeSwitch es,
+							FM_CommentEnvelopeChance cec
+						WHERE
+							cec.branchId = es.branchId
+						AND es.switchType = #{switchType}
+						AND es.branchId = (
+							SELECT
+								branchId
+							FROM
+								SM_User
+							WHERE
+								userId = (
+									SELECT
+										agentId
+									FROM
+										BM_Building
+									WHERE
+										buildingId = #{buildingId}
+								)
+						)
+						GROUP BY
+							cec.beginTime
+					),
+					'%Y-%m-%d'
+				) ]]>
+			)
+			OR (
+				<![CDATA[ date_format(now(), '%Y-%m-%d') > date_format(
+					(
+						SELECT
+							cec.endTime
+						FROM
+							FM_EnvelopeSwitch es,
+							FM_CommentEnvelopeChance cec
+						WHERE
+							cec.branchId = es.branchId
+						AND es.switchType = #{switchType}
+						AND es.branchId = (
+							SELECT
+								branchId
+							FROM
+								SM_User
+							WHERE
+								userId = (
+									SELECT
+										agentId
+									FROM
+										BM_Building
+									WHERE
+										buildingId = #{buildingId}
+								)
+						)
+						GROUP BY
+							cec.endTime
+					),
+					'%Y-%m-%d'
+				) ]]>
+			)
+		) THEN
+			0
+		ELSE
+			switchStatus
+		END AS switchStatus,
+		 updateUserId,
+		 updateTime,
+		 isValid
+		FROM
+			FM_EnvelopeSwitch
+		WHERE
+			switchType = #{switchType}
+		AND branchId = (
+			SELECT
+				branchId
+			FROM
+				SM_User
+			WHERE
+				userId = (
+					SELECT
+						agentId
+					FROM
+						BM_Building
+					WHERE
+						buildingId = #{buildingId}
+				)
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和开关类型查询总开关信息 -->
+	<select id="getSwitchByBuildingIdAndSwitchTypeForLookhouse" parameterType="Int" resultMap="EnvelopeSwitchResultMap">
+		SELECT
+			*
+		FROM
+			FM_EnvelopeSwitch
+		WHERE
+			branchId = (
+				SELECT
+					branchId
+				FROM
+					SM_User
+				WHERE
+					userId = (
+						SELECT
+							agentId
+						FROM
+							BM_Building
+						WHERE
+							buildingId = #{buildingId}
+					)
+			)
+		AND switchType = 1
+	</select>
+	
+	<!-- 根据楼盘编号和开关类型查询总开关信息 -->
+	<select id="getSwitchByCityId" parameterType="Int" resultMap="EnvelopeSwitchResultMap">
+		SELECT
+			*
+		FROM
+			FM_EnvelopeSwitch
+		WHERE
+			branchId = (
+				SELECT
+					branchId
+				FROM
+					SM_Branch
+				WHERE
+					branchCityId = #{cityId}
+			)
+		AND switchType = 1
+	</select>
+	
+</mapper> 

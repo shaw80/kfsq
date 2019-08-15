@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingTempMapper">
+
+	<resultMap id="baseResultMap" type="com.jzhl.kfsq.entity.bm.BuildingTemp">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="agentId" column="agentId" />
+		<result property="developer" column="developer" />
+		<result property="phone" column="phone" />
+		<result property="averagePrice" column="averagePrice" />
+		<result property="sectionMin" column="sectionMin" />
+		<result property="sectionMax" column="sectionMax" />
+		<result property="address" column="address" />
+		<result property="position" column="position" />
+		<result property="areaName" column="areaName" />
+		<result property="surrounding" column="surrounding" />
+		<result property="buildingInfo" column="buildingInfo" />
+		<result property="banner" column="banner" />
+		<result property="sourceBanner" column="sourceBanner" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="lastSynchronousTime" column="lastSynchronousTime" />
+		<result property="isSynchronous" column="isSynchronous" />
+		<result property="isValid" column="isValid" />
+		<result property="cityId" column="cityId" />
+		<result property="buildingNo" column="buildingNo" />
+	</resultMap>
+	
+	<sql id="BaseColumns">
+		buildingId,
+		buildingName,
+		developer,
+		phone,
+		averagePrice,
+		sectionMin,
+		sectionMax,
+		address,
+		position,
+		areaName,
+		surrounding,
+		buildingInfo,
+		banner,
+		sourceBanner,
+		isSynchronous,
+		createTime,
+		updateTime,
+		lastSynchronousTime,
+		isValid,
+		cityId,
+		buildingNo
+	</sql>
+
+	<insert id="insertBuildingTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingTemp" useGeneratedKeys="true" keyProperty="buildingId">
+		insert into BM_BuildingTemp 
+		(
+			<if test="buildingName != null and buildingName != ''">
+				buildingName,
+			</if>
+			<if test="developer != null and developer != ''">
+				developer,
+			</if>
+			<if test="cityId != null and cityId != ''">
+				cityId,
+			</if>
+			<if test="phone != null and phone != ''">
+				phone,
+			</if>
+			<if test="averagePrice != null and averagePrice != ''">
+				averagePrice,
+			</if>
+			<if test="sectionMin != null and sectionMin != ''">
+				sectionMin,
+			</if>
+			<if test="sectionMax != null and sectionMax != ''">
+				sectionMax,
+			</if>
+			<if test="address != null and address != ''">
+				address,
+			</if>
+			<if test="position != null and position != ''">
+				position,
+			</if>
+			<if test="areaName != null and areaName != ''">
+				areaName,
+			</if>
+			<if test="surrounding != null and surrounding != ''">
+				surrounding,
+			</if>
+			<if test="buildingInfo != null and buildingInfo != ''">
+				buildingInfo,
+			</if>
+			<if test="banner != null and banner != ''">
+				banner,
+			</if>
+			<if test="sourceBanner != null and sourceBanner != ''">
+				sourceBanner,
+			</if>
+			<if test="buildingNo != null and buildingNo != ''">
+				buildingNo,
+			</if>
+			createTime
+		)
+		values
+		(
+			<if test="buildingName != null and buildingName != ''">
+				#{buildingName},
+			</if>
+			<if test="developer != null and developer != ''">
+				#{developer},
+			</if>
+			<if test="cityId != null and cityId != ''">
+				#{cityId},
+			</if>
+			<if test="phone != null and phone != ''">
+				#{phone},
+			</if>
+			<if test="averagePrice != null and averagePrice != ''">
+				#{averagePrice},
+			</if>
+			<if test="sectionMin != null and sectionMin != ''">
+				#{sectionMin},
+			</if>
+			<if test="sectionMax != null and sectionMax != ''">
+				#{sectionMax},
+			</if>
+			<if test="address != null and address != ''">
+				#{address},
+			</if>
+			<if test="position != null and position != ''">
+				#{position},
+			</if>
+			<if test="areaName != null and areaName != ''">
+				#{areaName},
+			</if>
+			<if test="surrounding != null and surrounding != ''">
+				#{surrounding},
+			</if>
+			<if test="buildingInfo != null and buildingInfo != ''">
+				#{buildingInfo},
+			</if>
+			<if test="banner != null and banner != ''">
+				#{banner},
+			</if>
+			<if test="sourceBanner != null and sourceBanner != ''">
+				#{sourceBanner},
+			</if>
+			<if test="buildingNo != null and buildingNo != ''">
+				#{buildingNo},
+			</if>
+			now()
+		)
+	</insert>
+	
+	<select id="findBuildingTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingTemp" resultMap="baseResultMap">
+		select
+		<include refid="BaseColumns" />
+		from 
+		BM_BuildingTemp
+		<where>
+			<if test="cityId != null and cityId != ''">
+				and cityId=#{cityId}
+			</if>
+			<if test="isSynchronous != null">
+				and isSynchronous=#{isSynchronous}
+			</if>
+		</where>
+	</select>
+	
+	<update id="updateBuildingTemp" parameterType="com.jzhl.kfsq.entity.bm.BuildingTemp">
+		update 
+		BM_BuildingTemp
+		set
+			developer = #{developer},
+			phone = #{phone},
+			averagePrice = #{averagePrice},
+			sectionMin = #{sectionMin},
+			sectionMax = #{sectionMax},
+			address = #{address},
+			position = #{position},
+			areaName = #{areaName},
+			surrounding = #{surrounding},
+			buildingInfo = #{buildingInfo},
+			banner = #{banner},
+			sourceBanner = #{sourceBanner},
+		updateTime = now(),
+		isSynchronous = 0
+		where buildingId = #{buildingId}
+	</update>
+	
+	<update id="updateBuildingTempInValid"  parameterType="map">
+		update 
+		BM_BuildingTemp
+		set
+		updateTime = now(),
+		isSynchronous = 0,
+		isValid = 0
+		where 
+		buildingId in
+		<foreach collection="buildingIds" index="index" item="item" open="(" separator="," close=")">  
+            #{item}   
+    	</foreach>  
+	</update>
+	
+	<update id="updateBuildingTempSynchronized" parameterType="Integer">
+		update 
+		BM_BuildingTemp
+		set
+		lastSynchronousTime = now(),
+		isSynchronous = 1
+		where 
+		buildingId = #{buildingId}
+	</update>
+	
+	<select id="getBuildingTempCount" parameterType="com.jzhl.kfsq.entity.bm.BuildingTemp" resultType="Integer">
+		select
+		count(buildingId)
+		from 
+		BM_BuildingTemp
+		<where>
+			<if test="cityId != null and cityId != ''">
+				and cityId=#{cityId}
+			</if>
+			<if test="isSynchronous != null">
+				and isSynchronous=#{isSynchronous}
+			</if>
+		</where>
+	</select>
+	
+</mapper> 

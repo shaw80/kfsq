@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.ITagMapper">
+
+	<resultMap id="smTagResultMap" type="com.jzhl.kfsq.entity.sm.Tag">
+		<id property="tagId" column="tagId" />
+		<result property="tagName" column="tagName" />
+		<result property="tagType" column="tagType" />
+		<result property="tagTypeName" column="tagTypeName" />
+		<result property="parentTagId" column="parentTagId" />
+		<result property="isFeature" column="isFeature" />
+		<result property="goodIcon" column="goodIcon" />
+		<result property="badIcon" column="badIcon" />
+		<result property="isScore" column="isScore" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smTagResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smTagResultMap"></resultMap>
+
+	<insert id="addTag" parameterType="com.jzhl.kfsq.entity.sm.Tag">
+	   insert into SM_Tag (
+	     tagName,
+	     tagType,
+	     tagTypeName,
+	     parentTagId,
+	     <if test="isFeature != null">
+	     	isFeature,
+	     </if>
+	     isValid,
+	     isScore,
+	     goodIcon,
+	     badIcon,
+	     creatorUserId,
+	     <if test="updateUserId != null">
+	     	updateUserId,
+	     </if>
+	     <if test="updateTime != null">
+	     	updateTime,
+	     </if>
+	     createTime
+	   )values (
+	     #{tagName},
+	     #{tagType},
+	     #{tagTypeName},
+	     (select tagId from SM_Tag b where parentTagId =(SELECT tagId from sm_Tag a where tagTypeName = "房源标签") and tagType = #{tagType}), 
+	     <if test="isFeature != null">
+	     	 #{isFeature},
+	     </if>
+	     #{isValid},
+	     #{isScore},
+	     #{goodIcon},
+	     #{goodIcon},
+	     #{creatorUserId},
+	     <if test="updateUserId != null">
+	     	 #{updateUserId},
+	     </if>
+	     <if test="updateTime != null">
+	     	#{updateTime},
+	     </if>
+		 now()
+	   )
+	</insert>
+
+    <!-- 标签编辑 -->
+	<update id="updateTagInfo" parameterType="com.jzhl.kfsq.dto.sm.TagDto">
+	   update SM_Tag set
+	   	 <if test="tagName != null">
+	     	tagName=#{tagName},
+	     </if>
+	     <if test="tagType != null">
+	     	tagType=#{tagType},
+	     </if>
+	     <if test="goodIcon != null">
+	    	 goodIcon=#{goodIcon},
+	     </if>
+	     <if test="goodIcon != null">
+	    	 badIcon=#{goodIcon},
+	     </if>
+	     <if test="isScore != null">
+	    	 isScore=#{isScore},
+	     </if>
+	     <if test="tagTypeName != null">
+	     	tagTypeName=#{tagTypeName},
+	     </if>
+	     <if test="isFeature != null">
+	     	isFeature=#{isFeature},
+	     </if>
+	     <if test="isValid != null">
+	     	isValid=#{isValid},
+	     </if>
+	     <if test="creatorUserId != null">
+	     	creatorUserId=#{creatorUserId},
+	     </if>
+	     <if test="updateUserId != null">
+	    	 updateUserId=#{updateUserId},
+	     </if>
+	     updateTime=now()
+	   where 
+	    tagId=#{tagId} 
+	</update>
+	
+	<!-- 楼盘标签特色清空 -->
+	<update id="updateTagFeature" parameterType="com.jzhl.kfsq.dto.sm.TagDto">
+	   update SM_Tag set
+	   isFeature = 0
+	   where tagType = 3
+	</update>
+	
+	<!-- 删除标签 -->
+	<delete id="deleteTag" parameterType="com.jzhl.kfsq.entity.sm.Tag">
+		delete from SM_Tag where tagId=#{tagId}
+	</delete>
+	
+	<!-- 查询特色标签列表 -->
+	<select id="findFeatureTagDataSet" parameterType="map" resultMap="findResultMap">
+	   select tagId, tagName from SM_Tag where isFeature = 1 and isValid = 1 and tagType = 3
+	</select>
+
+	<!-- 根据户型编号查询标签 -->
+	<select id="findTagByUnitMapId" parameterType="int" resultType="com.jzhl.kfsq.dataset.sm.FeatureTagDataSet">
+	    SELECT
+			t.tagId tagId,
+			t.tagName tagName
+		FROM
+			SM_Tag t,
+			BM_UnitMapFeature f
+		WHERE
+			t.tagId = f.tagId
+		AND f.unitMapId = #{unitMapIds}
+	</select>
+	
+	<!-- 查询楼盘首页标签列表 -->
+	<select id="findCommentBuildingTagDateSet" parameterType="map" resultMap="findResultMap">
+	   SELECT
+	        stg.tagId,
+			stg.tagName 
+	   FROM SM_Tag stg 
+	   LEFT JOIN BM_BuildingTag bbt on stg.tagId = bbt.tagId
+	   <where>
+			bbt.isValid =1
+			and stg.isValid =1
+	   		<if test="isShow != null">
+	   			and bbt.isShow = #{isShow}
+	   		</if>
+	   		<if test="tagType != null">
+	   			and stg.tagType = #{tagType}
+	   		</if>
+			and bbt.buildingId = #{buildingId}
+	   </where> 
+	</select>
+	
+	<!-- 按照标签类型查询标签列表 -->
+	<select id="findTagDateSetList" parameterType="map" resultMap="findResultMap">
+	   SELECT stg.*,
+	   		  bbt.isShow
+	   FROM SM_Tag stg 
+	   LEFT JOIN BM_BuildingTag bbt on stg.tagId = bbt.tagId
+	   <where>
+	   		stg.isValid = 1 and stg.parentTagId != 2 
+	   		<if test="tagType != null">
+	   			and stg.tagType = #{tagType}
+	   		</if>
+	   		<if test="buildingId != null">
+	   			and bbt.buildingId = #{buildingId}
+	   		</if>
+	   </where> 
+	   GROUP BY stg.tagId
+	</select>
+	
+	<!-- 根据户型编号查询标签 -->
+	<select id="findUnitMapTagList" parameterType="map" resultMap="findResultMap">
+	    SELECT *
+		FROM SM_Tag stg
+		LEFT JOIN BM_UnitMapFeature buf on stg.tagId = buf.tagId
+		WHERE
+		 buf.unitMapId = #{unitMapId}
+		 and stg.tagType = #{tagType}
+	</select>
+	
+	<!-- 根据户型编号查询标签 -->
+	<select id="findThirdTags" parameterType="map" resultMap="findResultMap">
+	    SELECT * from SM_Tag where parentTagId in
+		(
+			select tagId from SM_Tag where parentTagId = 
+				(
+					SELECT tagId from SM_Tag where tagTypeName = "房源标签" and tagName = "房源标签"  
+				)
+		)
+		<if test="tagTypeName != null">
+			and tagTypeName = #{tagTypeName}
+		</if>
+		<if test="isValid != null">
+			and isValid = #{isValid}
+		</if>
+		<if test="isScore != null">
+			and isScore = #{isScore}
+		</if>
+		<if test="tagName != null">
+			and tagName like '%${tagName}%'
+		</if>
+		limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 根据户型编号查询标签 -->
+	<select id="findThirdTagsDataCount" parameterType="map" resultType="Integer">
+	    SELECT count(tagId) from SM_Tag where parentTagId in
+		(
+			select tagId from SM_Tag where parentTagId = 
+				(
+					SELECT tagId from SM_Tag where tagTypeName = "房源标签" and tagName = "房源标签"
+				)
+		)
+		<if test="tagTypeName != null">
+			and tagTypeName = #{tagTypeName}
+		</if>
+		<if test="isValid != null">
+			and isValid = #{isValid}
+		</if>
+		<if test="isScore != null">
+			and isScore = #{isScore}
+		</if>
+		<if test="tagName != null">
+			and tagName like '%${tagName}%'
+		</if>
+	</select>
+	
+	<!-- 获取标签详情 -->
+	<select id="getTagInfo" parameterType="map" resultType="com.jzhl.kfsq.dataset.sm.TagDataSet">
+	    SELECT * from SM_Tag where tagId = #{tagId}
+	</select>
+	
+</mapper> 

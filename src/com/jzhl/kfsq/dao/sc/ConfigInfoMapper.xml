@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sc.IConfigInfoMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sc.ConfigInfo" id="baseResultMap">
+		<id property="configId" column="configId" />
+		<result property="configType" column="configType" />
+		<result property="configTypeName" column="configTypeName" />
+		<result property="configKey" column="configKey" />
+		<result property="configValue" column="configValue" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+
+	<sql id="baseColumns">
+		configId,
+		configType,
+		configTypeName,
+		configKey,
+		configValue,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+
+	<sql id="tableName">
+		SC_ConfigInfo
+	</sql>
+	
+	<!-- 新增参数 -->
+	<insert id="insertConfigInfo" parameterType="com.jzhl.kfsq.entity.sc.ConfigInfo">
+	   insert into SC_ConfigInfo (
+	     <if test="configType != null">
+	     	configType,
+	     </if>
+	     <if test="configTypeName != null">
+	     	configTypeName,
+	     </if>
+	     <if test="configKey != null">
+	     	configKey,
+	     </if>
+	     <if test="configValue != null">
+	     	configValue,
+	     </if>
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+	     </if>
+	     <if test="updateUserId != null">
+	     	updateUserId,
+	     </if>
+	     <if test="updateTime != null">
+	     	updateTime,
+	     </if>
+	     createTime
+	   )values (
+	   	 <if test="configType != null">
+	     	#{configType},
+	     </if>
+	     <if test="configTypeName != null">
+	     	 #{configTypeName},
+	     </if>
+	     <if test="configKey != null">
+	     	 #{configKey},
+	     </if>
+	     <if test="configValue != null">
+	     	 #{configValue},
+	     </if>
+	     <if test="creatorUserId != null">
+	     	#{creatorUserId},
+	     </if>
+	     <if test="updateUserId != null">
+	     	#{updateUserId},
+	     </if>
+	     <if test="updateTime != null">
+	     	#{updateTime},
+	     </if>
+	     now()
+	     )
+	</insert>
+
+	<!-- 根据配置类型查询配置信息 -->
+	<select id="findConfigInfoByConfigType" parameterType="int"
+		resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		configType = #{configType}
+	</select>
+
+	<!-- 更新内容信息 -->
+	<update id="updateConfigInfo" parameterType="com.jzhl.kfsq.entity.sc.ConfigInfo">
+		update SC_ConfigInfo
+		set
+			updateTime = now()
+		<if test="configValue != null">
+			,configValue = #{configValue}
+		</if>
+		<if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		</if>
+		<where>
+			<if test="configId != null">
+				configId = #{configId}
+			</if>
+			<if test="configType != null">
+				and configType = #{configType}
+			</if>
+			<if test="configKey != null">
+				and configKey = #{configKey}
+			</if>
+		</where>
+	</update>
+	
+	<!-- 查看参数配置信息表信息 -->
+	<select id="getConfigInfoByObj" parameterType="com.jzhl.kfsq.entity.sc.ConfigInfo" resultType="com.jzhl.kfsq.entity.sc.ConfigInfo">
+		select * from SC_ConfigInfo
+		<where>
+			<if test="configType != null">
+				configType = #{configType}
+			</if>
+			<if test="configKey != null">
+				and configKey = #{configKey}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 查看参数配置信息列表表信息 -->
+	<select id="findConfigInfoList" parameterType="com.jzhl.kfsq.entity.sc.ConfigInfo" resultMap="baseResultMap">
+		select * from SC_ConfigInfo
+		<where>
+			<if test="configType != null">
+				configType = #{configType}
+			</if>
+		</where>
+	</select>
+</mapper>

@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.pm.ISalerMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.pm.VisitDataSet" id="visitMap">
+		<result property="visitDate" column="visitDate" />
+		<result property="visits" column="visits" />
+		<result property="week" column="week" />
+	</resultMap>
+
+	<resultMap type="com.jzhl.kfsq.dataset.pm.VisitMonthDataSet" id="visitMonthMap">
+		<result property="visitMonth" column="visitMonth" />
+		<result property="visits" column="visits" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.SalerCustomerDataSet" id="salerCustomerMap">
+		<result property="clientName" column="clientName" />
+		<result property="clientHeadPortrait" column="clientHeadPortrait" />
+		<result property="clientTime" column="clientTime" />
+		<result property="envelope" column="envelope" />
+		<result property="clientPhone" column="clientPhone" />
+		<result property="isFavorite" column="isFavorite" />
+		<result property="salerCustomerId" column="salerCustomerId" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.VisitCommonBean" id="visitCommonPersonResultMap">
+		<result property="userId" column="userId" />
+		<result property="count" column="count" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="userName" column="userName" />
+	</resultMap>
+	
+	<select id="getVisitCount" parameterType="com.jzhl.kfsq.dto.pm.VisitQueryDto" resultType="java.lang.Integer">
+		select 
+		count(pmsc.memberId) 
+		from 
+		PM_SalerCustomer pmsc
+		where 
+		pmsc.isValid = 1
+		<!-- 售楼员 -->
+		<if test="appUserType == 2">
+			and pmsc.userId = #{userId}
+		</if>
+		<!-- 营销总监 -->
+		<if test="appUserType == 0">
+			and pmsc.userId in 
+			(
+				select su2.userId from SM_User su2
+				where su2.appUserType = 2
+				and su2.userType = 1
+				and su2.isValid = 1
+				and su2.leaderUserId in
+				(
+					select su1.userId from SM_User su1
+					where su1.appUserType = 1
+					and su1.userType = 1
+					and su1.leaderUserId = #{userId}
+					and su1.isValid = 1
+				)
+			)
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') >= #{beginDate} ]]>
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') <= #{endDate} ]]>
+		</if>
+	</select>
+	
+	
+	<select id="getDayVisitCountList" parameterType="com.jzhl.kfsq.dto.pm.VisitQueryDto" resultMap="visitMap">
+		select 
+		date_format(pmsc.updateTime,'%Y-%m-%d') as visitDate, 
+		dayofweek(pmsc.updateTime) as week, 
+		count(pmsc.memberId) as visits 
+		from 
+		PM_SalerCustomer pmsc
+		where 
+		pmsc.isValid = 1
+		<!-- 售楼员 -->
+		<if test="appUserType == 2">
+			and pmsc.userId = #{userId}
+		</if>
+		<!-- 营销总监 -->
+		<if test="appUserType == 0">
+			and pmsc.userId in 
+			(
+				select su2.userId from SM_User su2
+				where su2.appUserType = 2
+				and su2.userType = 1
+				and su2.isValid = 1
+				and su2.leaderUserId in
+				(
+					select su1.userId from SM_User su1
+					where su1.appUserType = 1
+					and su1.userType = 1
+					and su1.leaderUserId = #{userId}
+					and su1.isValid = 1
+				)
+			)
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') >= #{beginDate} ]]>
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') <= #{endDate} ]]>
+		</if>
+		group by date_format(pmsc.updateTime,'%Y-%m-%d')
+	</select>
+	
+	<select id="findSalerCustomerDataSetPage" parameterType="com.jzhl.kfsq.dto.pm.SalerCustomerDto" resultMap="salerCustomerMap">
+		select 
+		mmm.nickName as clientName, 
+		mmm.headPortrait as clientHeadPortrait,
+		DATE_FORMAT(max(pmsc.updateTime),'%Y-%m-%d %H:%i:%S') as clientTime, 
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer
+			where smer.buildingId = pmp.buildingId
+			and smer.isValid = 1 limit 0, 1
+		), 0) as envelope,
+		mmm.phone as clientPhone, 
+		(case when sum(pmsc.isFavorite)> 0 then 1 else 0 end) as isFavorite,
+		pmsc.salerCustomerId as salerCustomerId
+		from 
+		PM_SalerCustomer pmsc, 
+		MM_Member mmm, 
+		PM_Plan pmp, 
+		SM_UserBuilding sub
+		where pmsc.memberId = mmm.memberId
+		and pmp.creatorUserId = mmm.memberId
+		and sub.buildingId = pmp.buildingId
+		and sub.userId = pmsc.userId
+		and pmsc.isValid = 1 
+		and mmm.isValid = 1 
+		and sub.isValid = 1
+		and pmp.isValid = 1 
+		and pmsc.userId = #{userId}
+		<if test="isFavorites != null">
+			and pmsc.isFavorite = #{isFavorites}
+		</if>
+		<if test="memberName != null">
+			and mmm.nickName like CONCAT('%', #{memberName},'%')  
+		</if>
+		GROUP BY mmm.memberId
+		limit #{rowStart}, #{offset}
+	</select>
+	
+		
+	<select id="findSalerCustomerDataSetCount" parameterType="com.jzhl.kfsq.dto.pm.SalerCustomerDto" resultType="java.lang.Integer">
+		SELECT
+		count(clientName)
+		FROM
+		(
+    	select 
+		mmm.nickName as clientName, 
+		mmm.headPortrait as clientHeadPortrait,
+		DATE_FORMAT(max(pmsc.updateTime),'%Y-%m-%d %H:%i:%S') as clientTime, 
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer 
+			where smer.buildingId = pmp.buildingId
+			and smer.isValid = 1 limit 0, 1
+		), 0) as envelope,
+		mmm.phone as clientPhone, 
+		(case when sum(pmsc.isFavorite)> 0 then 1 else 0 end) as isFavorite,
+		pmsc.salerCustomerId as salerCustomerId
+		from 
+		PM_SalerCustomer pmsc, 
+		MM_Member mmm, 
+		PM_Plan pmp, 
+		SM_UserBuilding sub
+		where pmsc.memberId = mmm.memberId
+		and pmp.creatorUserId = mmm.memberId
+		and sub.buildingId = pmp.buildingId
+		and sub.userId = pmsc.userId
+		and pmsc.isValid = 1 
+		and mmm.isValid = 1 
+		and sub.isValid = 1
+		and pmp.isValid = 1 
+		and pmsc.userId = #{userId}
+		<if test="isFavorites != null">
+			and pmsc.isFavorite = #{isFavorites}
+		</if>
+		<if test="memberName != null">
+			and mmm.nickName like CONCAT('%', #{memberName},'%')  
+		</if>
+		
+		GROUP BY mmm.memberId
+		limit 0, 20
+		) as view
+	</select>
+	
+	<select id="getMonthVisitCountList" parameterType="com.jzhl.kfsq.dto.pm.VisitQueryDto" resultMap="visitMonthMap">
+		select 
+		date_format(pmsc.updateTime,'%m') as visitMonth, 
+		count(pmsc.memberId) as visits 
+		from 
+		PM_SalerCustomer pmsc
+		where 
+		pmsc.isValid = 1
+		<!-- 售楼员 -->
+		<if test="appUserType == 2">
+			and pmsc.userId = #{userId}
+		</if>
+		<!-- 营销总监 -->
+		<if test="appUserType == 0">
+			and pmsc.userId in 
+			(
+				select su2.userId from SM_User su2
+				where su2.appUserType = 2
+				and su2.userType = 1
+				and su2.isValid = 1
+				and su2.leaderUserId in
+				(
+					select su1.userId from SM_User su1
+					where su1.appUserType = 1
+					and su1.userType = 1
+					and su1.leaderUserId = #{userId}
+					and su1.isValid = 1
+				)
+			)
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') >= #{beginDate} ]]>
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(pmsc.updateTime,'%Y-%m-%d') <= #{endDate} ]]>
+		</if>
+		group by date_format(pmsc.updateTime,'%m')
+	</select>
+	
+	<!-- 根据置业顾问编号查询到访业绩 -->
+	<select id="findVisitPerson" parameterType="map" resultMap="visitCommonPersonResultMap">
+		select 
+		count(sc.userId) count,
+		u.userId userId,
+		u.name userName,
+		u.headPortrait headPortrait
+		from PM_SalerCustomer sc, SM_User u 
+		where sc.userId = u.userId 
+		and sc.userId in ( 
+			select u1.userId from SM_User u1
+			where u.leaderUserId = (
+				select u2.leaderUserId from SM_User u2 
+				where u2.userId = #{userId} 
+				and u2.isValid = 1
+				and u2.appUserType = 2 
+				and u2.userType = 1
+			) 
+			and u1.appUserType = 2
+			and u1.userType = 1
+		)
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+		group by sc.userId 
+		order by count(sc.userId) desc, max(sc.updateTime) asc
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据置业顾问编号统计某段时间到访业绩的数据量 -->
+	<select id="countVisitPerson" parameterType="map" resultType="Integer">
+		select 
+		count(a.count) 
+		from 
+		(
+			select 
+			count(u.name) count 
+			from PM_SalerCustomer sc, SM_User u 
+			where sc.userId = u.userId 
+			and sc.userId in ( 
+				select u1.userId 
+				from SM_User u1 
+				where u1.leaderUserId = (
+					select u2.leaderUserId from SM_User u2 
+					where u2.userId = #{userId} 
+					and u2.isValid = 1
+					and u2.appUserType = 2 
+					and u2.userType = 1
+				)
+				and u1.appUserType = 2 
+				and u1.userType = 1
+			) 
+			<if test="beginTime != null and beginTime != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+			</if> 
+			group by u.userId
+		) a
+	</select>
+	
+	<!-- 根据置业顾问编号查询一段时间的到访量 -->
+	<select id="getVisit" parameterType="map" resultType="Integer">
+		select 
+		count(sc.userId) 
+		from 
+		PM_SalerCustomer sc, 
+		SM_User u 
+		where 
+		sc.userId = u.userId 
+		and sc.userId in ( 
+			select u1.userId 
+			from SM_User u1 
+			where u1.leaderUserId = (
+				select u2.leaderUserId from SM_User u2 
+				where u2.userId = #{userId} 
+				and u2.isValid = 1
+				and u2.appUserType = 2 
+				and u2.userType = 1
+			)
+			and u1.appUserType = 2 
+			and u1.userType = 1
+		)
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') >= date_format(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') <= date_format(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+	</select>
+	
+</mapper>

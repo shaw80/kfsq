@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IEducationMapper">
+	
+	<!-- 根据楼盘编号统计优质小学 -->
+	<select id="countGreatPrimarySchool" parameterType="int" resultType="int">
+		SELECT
+			COUNT(bme.educationId) countGreatPrimarySchool
+		FROM
+			BM_Education bme,
+			SM_Dictionary smd
+		WHERE
+			bme.buildingId = #{buildingId}
+		AND bme.schoolName = smd.name
+		AND bme.isValid = 1
+		AND bme.type = 1
+		AND distance &lt;= 1500
+	</select>
+	
+	<!-- 根据楼盘编号统计普通小学 -->
+	<select id="countOrdinaryPrimarySchool" parameterType="int" resultType="int">
+		SELECT
+			COUNT(A.educationId)
+		FROM
+			BM_Education A
+		WHERE
+			NOT EXISTS (
+				SELECT
+					1
+				FROM
+					SM_Dictionary smd
+				WHERE
+					smd.NAME = A.schoolName
+				AND smd.type = 3
+				AND smd.isValid = 1
+			)
+		AND A.buildingId = #{buildingId}
+		AND A.type = 1
+		AND A.isValid = 1
+		AND A.distance &lt;= 1500
+	</select>
+	
+	<!-- 根据楼盘编号和类型统计学校数量 -->
+	<select id="countSchool" parameterType="map" resultType="int">
+		SELECT
+			COUNT(educationId) countSchool
+		FROM
+			BM_Education
+		WHERE
+			buildingId = #{buildingId}
+		AND type = #{type}
+		AND isValid = 1
+		<if test="type==0">
+			AND distance &lt;= 1000
+		</if>
+		<if test="type==2 || type==3">
+			AND distance &lt;= 2000
+		</if>
+	</select>
+	
+</mapper> 

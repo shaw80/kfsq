@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IUnitMapMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.bm.UnitMap" id="baseResultMap">
+		<id property="unitMapId" column="unitMapId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="imgName" column="imgName" />
+		<result property="imgDes" column="imgDes" />
+		<result property="path" column="path" />
+		<result property="imgType" column="imgType" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+		<result property="unitMapNo" column="unitMapNo" />
+		<result property="turned" column="turned" />
+		<result property="acreage" column="acreage" />
+		<result property="unitPrice" column="unitPrice" />
+		<result property="totalPrice" column="totalPrice" />
+		<result property="roomRate" column="roomRate" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		unitMapId,
+		buildingId,
+		imgName,
+		imgDes,
+		path,
+		imgType,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid,
+		unitMapNo,
+		turned,
+		acreage,
+		unitPrice, 
+		ifnull((unitPrice * acreage), 0) as totalPrice,
+		roomRate
+	</sql>
+	
+	<select id="findUnitMap" parameterType="com.jzhl.kfsq.entity.bm.UnitMap" resultType="com.jzhl.kfsq.entity.bm.UnitMap">
+		select 
+		<include refid="baseColumns" />
+		from BM_UnitMap
+		where
+		<trim prefixOverrides="and">
+			<if test="buildingId != null">
+				and buildingId = #{buildingId}
+			</if>
+			<if test="isValid != null">
+				and isValid = #{isValid}
+			</if>
+		</trim>
+	</select>
+	<insert id="insert" parameterType="com.jzhl.kfsq.entity.bm.UnitMap" useGeneratedKeys="true" keyProperty="unitMapId">
+		insert into BM_UnitMap (
+		<if test="unitMapNo != null and unitMapNo != ''">
+			unitMapNo,
+		</if>
+		buildingId,
+		imgName,
+		imgDes,
+		path,
+		imgType,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		numOfRoom,
+		turned,
+		acreage,
+		unitPrice,
+		roomRate,
+		isValid
+		)values (
+		<if test="unitMapNo != null and unitMapNo != ''">
+			#{unitMapNo},
+		</if>
+		#{buildingId},
+		#{imgName},
+		#{imgDes},
+		#{path},
+		#{imgType},
+		#{creatorUserId},
+		now(),
+		#{updateUserId},
+		#{updateTime},
+		#{numOfRoom},
+		#{turned},
+		#{acreage},
+		#{unitPrice},
+		#{roomRate},
+		#{isValid}
+		)
+	</insert>
+	<select id="findUnitMapList" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.UnitMapDataSet">
+		select 
+		u.*,
+		ifnull((u.unitPrice * u.acreage), 0) as totalPrice,
+		b.buildingName,
+		(select COUNT(unitMapFeatureId)
+			from BM_UnitMapFeature bbt
+			LEFT JOIN SM_Tag stg on bbt.tagId = stg.tagId
+			where stg.tagType=4 and stg.isValid = 1 and stg.parentTagId != 2
+		  and bbt.unitMapId = u.unitMapId) as tagNum
+		from BM_UnitMap u,BM_Building b
+		where u.buildingId=b.buildingId and u.imgType = 0
+
+			<if test="buildingId != null">
+				and u.buildingId = #{buildingId}
+			</if>
+			<if test="isValid != null">
+				and u.isValid = #{isValid}
+			</if>
+			<if test="imgName != null">
+				and u.imgName like '%${imgName}%'
+			</if>
+		limit #{rowStart}, #{offset}
+	</select>
+	<select id="unitMapListCount" parameterType="map" resultType="Integer">
+		select 
+		count(unitMapId)
+		from BM_UnitMap
+		where imgType=0 
+			<if test="buildingId != null">
+				and buildingId = #{buildingId}
+			</if>
+			<if test="isValid != null">
+				and isValid = #{isValid}
+			</if>
+			<if test="imgName != null">
+				and imgName like '%${imgName}%'
+			</if>
+	</select>
+	<select id="getUnitMap" parameterType="com.jzhl.kfsq.entity.bm.UnitMap" resultType="com.jzhl.kfsq.dataset.bm.UnitMapDataSet">
+	select * from BM_UnitMap where unitMapId=#{unitMapId}
+	</select>
+	<update id="updateMap" parameterType="com.jzhl.kfsq.entity.bm.UnitMap">
+	    update BM_UnitMap set
+		    updateTime =now()
+		     <if test="imgName != null">
+		     	,imgName = #{imgName}
+			 </if>
+			 <if test="imgDes != null">
+			 	,imgDes = #{imgDes}
+		     </if>
+		 	 <if test="path != null">
+			 	,path = #{path}
+		     </if>
+		     <if test="numOfRoom != null">
+			 	,numOfRoom = #{numOfRoom}
+		     </if>
+		     <if test="turned != null">
+			 	,turned = #{turned}
+		     </if>
+		     <if test="acreage != null">
+			 	,acreage = #{acreage}
+		     </if>
+		     <if test="unitPrice != null">
+			 	,unitPrice = #{unitPrice}
+		     </if>
+		     <if test="roomRate != null">
+			 	,roomRate = #{roomRate}
+		     </if>
+	    where 
+	    	unitMapId=#{unitMapId}
+	</update>
+	
+	<update id="update" parameterType="com.jzhl.kfsq.entity.bm.UnitMap">
+		update 
+		BM_UnitMap 
+		set
+		buildingId = #{buildingId},
+		imgName = #{buildingId},
+		imgDes = #{buildingId},
+		path = #{buildingId},
+		imgType = #{buildingId},
+		updateUserId = #{updateUserId},
+		updateTime = now()
+		where 
+		unitMapId = #{unitMapId}
+	</update>
+	
+	<update id="inValid" parameterType="com.jzhl.kfsq.entity.bm.UnitMap">
+		update 
+		BM_UnitMap 
+		set
+		isValid = 0,
+		updateUserId = #{updateUserId},
+		updateTime = now()
+		where 
+		unitMapId = #{unitMapId}
+	</update>
+	
+	<select id="findUnitMapByBuildingIdAndPage" parameterType="com.jzhl.kfsq.dto.bm.UnitMapScoreDetailDto" resultMap="baseResultMap">
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			BM_UnitMap
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+		ORDER BY
+			numOfRoom,
+			acreage ASC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<select id="countUnitMapByBuildingIdAndPage" parameterType="com.jzhl.kfsq.dto.bm.UnitMapScoreDetailDto" resultType="Integer">
+		SELECT
+			COUNT(unitMapId)
+		FROM
+			BM_UnitMap
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号查询户型描述 -->
+	<select id="findUnitMapDes" parameterType="int" resultType="string">
+		SELECT
+			imgDes unitMapNames
+		FROM
+			BM_UnitMap
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+		GROUP BY
+  			imgDes
+	</select>
+	
+</mapper>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.ILineInfoMapper">
+
+	<select id="getBusMinDistance" parameterType="int" resultType="Integer">
+		SELECT
+			MIN(a.distance)
+		FROM
+			(
+				SELECT
+					*
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BM_LineInfo
+						WHERE
+							buildingId = #{buildingId}
+						AND type = 0
+						AND distance &lt;= 10000
+						ORDER BY
+							distance
+					) b
+				GROUP BY
+					b.lineName
+			) a
+	</select>
+	
+	<!-- 根据楼盘编号、最短距离和最大距离统计轨道交通工具的数量 -->
+	<select id="countBusByBuildIdAndBeginAndEnd" parameterType="map"
+		resultType="int">
+		SELECT
+			COUNT(a.lineId)
+		FROM
+			(
+				SELECT
+					*
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BM_LineInfo
+						WHERE
+							buildingId = #{buildingId}
+						AND type = 0
+						ORDER BY
+							distance
+					) b
+				GROUP BY
+					b.lineName
+			) a
+		WHERE
+		  a.distance &gt;= #{begin}
+		AND
+		  a.distance &lt;= #{end}
+	</select>
+	
+	<select id="getTrackMinDistance" parameterType="int" resultType="Integer">
+		SELECT
+			MIN(a.distance)
+		FROM
+			(
+				SELECT
+					*
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BM_LineInfo
+						WHERE
+							buildingId = #{buildingId}
+						AND (type = 1 OR type = 2)
+						AND distance &lt;= 10000
+						ORDER BY
+							distance
+					) b
+				GROUP BY
+					b.lineName
+			) a
+	</select>
+	
+	<!-- 根据楼盘编号、最短距离和最大距离统计轨道交通工具的数量 -->
+	<select id="countLineByBuildIdAndBeginAndEnd" parameterType="map"
+		resultType="int">
+		SELECT
+			COUNT(a.lineId)
+		FROM
+			(
+				SELECT
+					*
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BM_LineInfo
+						WHERE
+							buildingId = #{buildingId}
+						AND (type = 1 OR type = 2)
+						ORDER BY
+							distance
+					) b
+				GROUP BY
+					b.lineName
+			) a
+		WHERE
+		  a.distance &gt;= #{begin}
+		AND
+		  a.distance &lt;= #{end}
+	</select>
+	
+	<!-- 根据楼盘编号、交通工具类型和距离查询站点信息 -->
+	<select id="findStationByBuildingIdAndTypeAndDistance" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.Station">
+		SELECT
+			bmt.lineName stationName,
+			GROUP_CONCAT(CONCAT(bmli.lineName)) lineName,
+			bmt.longitude longitude,
+			bmt.latitude latitude
+		FROM
+			BM_Traffic bmt,
+			BM_LineInfo bmli
+		WHERE
+			bmt.trafficId = bmli.trafficId
+		AND bmt.buildingId = #{buildingId}
+		AND bmt.type = #{type}
+		AND bmt.distance &lt;= #{distance}
+		AND bmt.isValid = 1
+		GROUP BY
+			bmt.lineName
+	</select>
+	
+</mapper> 

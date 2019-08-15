@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingPriceDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dto.bm.BuildingPriceDto" id="baseResultMap">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="averagePrice" column="averagePrice" />
+		<result property="address" column="address" />
+		<result property="phone" column="phone" />
+		<result property="banner" column="banner" />
+		<result property="surrounding" column="surrounding" />
+		<result property="buildingInfo" column="buildingInfo" />
+		<result property="county" column="county" />
+		<result property="priceId" column="priceId" />
+		<result property="scancodePrice" column="scancodePrice" />
+	</resultMap>
+	
+	<sql id="BaseColumns">
+		bmb.buildingId as buildingId,
+		bmb.buildingName as buildingName,
+		bmb.averagePrice as averagePrice,
+		bmb.address as address,
+		bmb.phone as phone,
+		bmb.banner as banner,
+		bmb.surrounding as surrounding,
+		bmb.buildingInfo as buildingInfo,
+		bmb.county as county,
+		(
+			CASE
+			WHEN bmb.averagePrice IS NULL THEN
+				NULL
+			ELSE
+				(
+					SELECT
+						smpi.priceId
+					FROM
+						SM_PriceInfo smpi
+					WHERE
+						smpi.isValid = 1
+					AND bmb.averagePrice >= smpi.minPrice
+					AND smpi.maxPrice >= bmb.averagePrice
+				)
+			END
+		) AS priceId,
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer 
+			where smer.buildingId = bmb.buildingId
+			and smer.isValid = 1 limit 0, 1
+		), 0) as scancodePrice
+	</sql>
+	
+	<select id="getBuildingPriceDto" parameterType="java.lang.Integer" resultMap="baseResultMap">
+			select 
+				<include refid="BaseColumns" />
+			from
+				BM_Building bmb
+			where bmb.isValid = 1
+			and bmb.buildingId = #{buildingId}
+	</select>
+	
+</mapper>

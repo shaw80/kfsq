@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.em.IEncyclopediaDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dto.em.EncyclopediaDto" id="baseResultMap">
+		<id property="firstClassId" column="firstClassId" />
+		<result property="firstClassName" column="firstClassName" />
+		<result property="secondClassId" column="secondClassId" />
+		<result property="secondClassName" column="secondClassName" />
+		<result property="encyclopediaId" column="encyclopediaId" />
+		<result property="title" column="title" />
+		<result property="updateTime" column="updateTime" />
+		<result property="readCount" column="readCount" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateUserName" column="updateUserName" />
+		<result property="content" column="content" />
+		<result property="url" column="url" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		firstClassId,
+		firstClassName,
+		secondClassId,
+		secondClassName,
+		encyclopediaId,
+		title,
+		updateTime,
+		readCount,
+		updateUserId,
+		updateUserName,
+		content,
+		url
+	</sql>
+	
+	<select id="getEncyclopediaDto" parameterType="com.jzhl.kfsq.dto.em.EncyclopediaDto" resultType="com.jzhl.kfsq.dto.em.EncyclopediaDto">
+		select eme.encyclopediaId, eme.title, eme.updateTime, eme.readCount, eme.updateUserId, su.name as updateUserName,
+		eme.content, eme.url, emec.classId as secondClassId, emec.className as secondClassName,
+		emecp.classId as firstClassId, emecp.className as firstClassName
+		from EM_Encyclopedia eme, EM_EncyclopediaClass emec ,  EM_EncyclopediaClass emecp,  SM_User su
+		where  eme.isValid = 1 
+		and eme.classId = emec.classId
+		and emec.parentId = emecp.classId
+		and su.userId = eme.updateUserId
+		and eme.encyclopediaId = #{encyclopediaId}
+	</select>
+	
+	<!-- 后台查看百科详情 -->
+	<select id="getEncyclopediaInfo" parameterType="com.jzhl.kfsq.dto.em.EncyclopediaDto" resultType="com.jzhl.kfsq.dto.em.EncyclopediaDto">
+		select eme.encyclopediaId, eme.title, eme.updateTime, eme.readCount, eme.updateUserId, su.name as updateUserName,
+		eme.content, eme.url, emec.classId as secondClassId, emec.className as secondClassName,
+		emecp.classId as firstClassId, emecp.className as firstClassName
+		from EM_Encyclopedia eme, EM_EncyclopediaClass emec ,  EM_EncyclopediaClass emecp,  SM_User su
+		where eme.classId = emec.classId
+		and emec.parentId = emecp.classId
+		and su.userId = eme.updateUserId
+		and eme.encyclopediaId = #{encyclopediaId}
+	</select>
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.ILogMapper">
+
+  <select id="findLogList"  parameterType="com.jzhl.kfsq.common.base.PageListCondition" resultType="com.jzhl.kfsq.dataset.sm.LogDataSet">
+  select s.*,u.name from SM_Log s,SM_User u where s.logUserId=u.userId ORDER BY createTime DESC limit #{rowStart}, #{offset}
+  </select>
+  <select id="getNumber" resultType="Integer">
+  select count(*) from SM_Log
+  </select>
+<insert id="insert" parameterType="com.jzhl.kfsq.dto.sm.LogDto">
+ 
+  insert into SM_Log
+  (logUserId,
+  logText,
+  logIp,
+  createTime)
+  values
+  (#{logUserId},
+  #{logText},
+  #{logIp},
+  now())
+
+</insert>
+</mapper>

@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingEnvelopeDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dto.bm.BuildingEnvelopeDto" id="baseResultMap">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="longitude" column="longitude" />
+		<result property="latitude" column="latitude" />
+		<result property="averagePrice" column="averagePrice" />
+		<result property="section" column="section" />
+		<result property="position" column="position" />
+		<result property="scancodePrice" column="scancodePrice" />
+		<result property="developer" column="developer" />
+		<result property="banner" column="banner" />
+		<result property="phone" column="phone" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		bmb.buildingId AS buildingId,
+		bmb.buildingName AS buildingName,
+		bmb.longitude AS longitude,
+		bmb.latitude AS latitude,
+		bmb.averagePrice AS averagePrice,
+		CONCAT(
+			bmb.sectionMin,
+			'-',
+			bmb.sectionMax
+		) AS section,
+		bmb.position AS position,
+		bmb.developer AS developer,
+		bmb.banner AS banner,
+		bmb.phone AS phone,
+		ifnull(
+			(
+				SELECT
+					smer.scancodePrice AS scancodePrice
+				FROM
+					SM_EnvelopeRule smer
+				WHERE
+					smer.buildingId = bmb.buildingId
+				AND smer.isValid = 1
+				GROUP BY
+					bmb.buildingId
+			),
+			0
+		) AS scancodePrice,
+			IFNULL(
+				(
+					SELECT
+						SUM(a.totalSum)
+					FROM
+						FM_EnvelopeRecharge a
+					WHERE
+						a.buildingId = bmb.buildingId
+					AND a.isValid = 1
+				),
+				0
+			) - IFNULL(
+				(
+					SELECT
+						SUM(b.price)
+					FROM
+						FM_EnvelopeReceive b
+					WHERE
+						b.buildingId = bmb.buildingId
+					AND (b. STATUS != 0)
+					AND b.isValid = 1
+				),
+				0
+			) - IFNULL(
+				(
+					SELECT
+						SUM(c.price)
+					FROM
+						FM_RedemptionApplication c
+					WHERE
+						c.buildingId = bmb.buildingId
+					AND c.isValid = 1
+				),
+				0
+			) AS balance,
+			<if test="memberId != null">
+				IFNULL(
+				(
+					SELECT
+						CONVERT(COUNT(planId), CHAR)
+					FROM
+						PM_Plan d
+					WHERE
+						d.buildingId = bmb.buildingId
+					AND creatorUserId = #{memberId}
+					AND isValid = 1
+				),
+				'0'
+			) AS isPlan,
+			</if>
+			(
+				SELECT
+					GROUP_CONCAT(
+						CONCAT(
+							d.featureId,
+							':',
+							f.featureName
+						)
+					)
+				FROM
+					BM_BuildingFeature d,
+					SM_Feature f
+				WHERE
+					d.featureId = f.featureId
+				AND buildingId = bmb.buildingId
+				AND d.isValid = 1
+				AND f.isValid = 1
+			) as feature
+	</sql>
+	
+	<sql id="selCondition">
+		<!-- 非综合查询，即将areaId，priceId，featureId用and拼接-->
+		<if test="isComprehensive == 0">
+			<if test="areaId != null and areaId != '' and areaId != 0">
+				and bmb.county = #{areaId} 
+			</if>
+			<if test="secondAreaId != null and secondAreaId != '' and secondAreaId != 0">
+				and bmb.secondAreaId = #{secondAreaId} 
+			</if>
+			<if test="priceId != null and priceId != '' and priceId != 0">
+				and 
+				<![CDATA[bmb.averagePrice >= (select smpi.minPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+				and 
+				<![CDATA[bmb.averagePrice <= (select smpi.maxPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+			</if>
+			<if test="featureIdDisplay != null">
+				and bmb.buildingId in (select bbf.buildingId from BM_BuildingFeature bbf where bbf.featureId in 
+				<foreach collection="featureIdDisplay" index="index" item="item" open="(" separator="," close=")">  
+           			#{item}   
+   				</foreach> 
+				and bbf.isValid = 1)
+			</if>
+		</if>
+		<!-- 综合查询，即将areaId，priceId，featureId用or拼接
+		<if test="isComprehensive == 1 and ((areaId != null and areaId != '' and areaId != 0) or (priceId != null and priceId != '' and priceId != 0) or (featureIdDisplay != null))">
+			and (
+				<trim prefixOverrides="or">
+					<if test="areaId != null and areaId != '' and areaId != 0">
+						or bmb.county = #{areaId} 
+					</if>
+					<if test="priceId != null and priceId != '' and priceId != 0">
+						or (
+							<![CDATA[bmb.averagePrice >= (select smpi.minPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+							and 
+							<![CDATA[bmb.averagePrice <= (select smpi.maxPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+						)
+					</if>
+					<if test="featureIdDisplay != null">
+						or bmb.buildingId in (select bbf.buildingId from BM_BuildingFeature bbf where bbf.featureId in 
+						<foreach collection="featureIdDisplay" index="index" item="item" open="(" separator="," close=")">  
+		           			#{item}   
+		   				</foreach> 
+		   				and bbf.isValid = 1)
+		   			</if>
+	   			</trim>
+			)
+		</if>-->
+		<if test="developer != null and developer != ''">
+			and bmb.developer like CONCAT('%', #{developer},'%')  
+		</if>
+		<if test="buildingName != null and buildingName != ''">
+			and bmb.buildingName like CONCAT('%', #{buildingName},'%') 
+		</if>
+		<if test="position != null and position!= ''">
+			and bmb.position like CONCAT('%', #{position},'%')
+		</if>
+		<!--   由于<![CDATA[没好使，以下对大于小于号进行转义:	小于号 &lt;   大于号&gt; -->
+		<if test="longitude != null and longitudeSpan != null and longitudeSpan &lt; 180 and minLongitude != null and maxLongitude != null">
+			<if test="minLongitude * maxLongitude &gt;= 0"> 
+ 				and bmb.longitude &gt;= #{minLongitude} and bmb.longitude  &lt;= #{maxLongitude}  
+			</if> 
+ 			<if test="minLongitude * maxLongitude  &lt; 0"> 
+				and ((bmb.longitude &gt;= #{minLongitude} and bmb.longitude  &lt;= 180) or (bmb.longitude  &lt;= #{maxLongitude} and bmb.longitude &gt;= -180)) 
+ 			</if> 
+ 		</if> 
+		<if test="latitude != null and latitudeSpan != null and minLatitude!= null and maxLatitude != null">
+			and bmb.latitude &gt;= #{minLatitude} and bmb.latitude &lt;= #{maxLatitude}
+		</if>
+		<if test="buildingId != null and buildingId != ''">
+			and bmb.buildingId != #{buildingId}
+		</if>
+		<if test="cityId != null and cityId != ''">
+			and bmb.county in (
+				select sma.areaId
+				from SM_Area sma
+				where sma.cityId = #{cityId}
+			)
+		</if>
+		<if test="decorationSituation != null">
+			and bmb.decorationSituation = #{decorationSituation} 
+		</if>
+		<if test="tagId != null">
+			and tg.tagId = #{tagId} 
+		</if>
+		<if test="sortFlag == 0">
+			    and bmb.averagePrice != 0
+		</if>
+	</sql>
+	
+	<select id="findBuildingEnvelopeDto" parameterType="com.jzhl.kfsq.dto.bm.BuildingDto" resultType="com.jzhl.kfsq.dto.bm.BuildingEnvelopeDto">
+		select
+			DISTINCT bmb.buildingId AS buildingId,
+			bmb.buildingName AS buildingName,
+			bmb.longitude AS longitude,
+			bmb.latitude AS latitude,
+			bmb.averagePrice AS averagePrice,
+			bmb.salesType AS salesType,
+			IFNULL(bs.totalScore, 0) totalScore,
+			CONCAT(
+				bmb.sectionMin,
+				'-',
+				bmb.sectionMax
+			) AS section,
+			bmb.address AS position,
+			bmb.developer AS developer,
+			bmb.banner AS banner,
+			bmb.phone AS phone,
+			ifnull(
+				(
+					SELECT
+						smer.scancodePrice AS scancodePrice
+					FROM
+						SM_EnvelopeRule smer
+					WHERE
+						smer.buildingId = bmb.buildingId
+					AND smer.isValid = 1
+					GROUP BY
+						bmb.buildingId
+				),
+				0
+			) AS scancodePrice,
+				IFNULL(
+					(
+						SELECT
+							SUM(a.totalSum)
+						FROM
+							FM_EnvelopeRecharge a
+						WHERE
+							a.buildingId = bmb.buildingId
+						AND a.isValid = 1
+					),
+					0
+				) - IFNULL(
+					(
+						SELECT
+							SUM(b.price)
+						FROM
+							FM_EnvelopeReceive b
+						WHERE
+							b.buildingId = bmb.buildingId
+						AND (b. STATUS != 0)
+						AND b.isValid = 1
+					),
+					0
+				) - IFNULL(
+					(
+						SELECT
+							SUM(c.price)
+						FROM
+							FM_RedemptionApplication c
+						WHERE
+							c.buildingId = bmb.buildingId
+						AND c.isValid = 1
+					),
+					0
+				) AS balance,
+				<if test="memberId != null">
+					IFNULL(
+					(
+						SELECT
+							CONVERT(COUNT(planId), CHAR)
+						FROM
+							PM_Plan d
+						WHERE
+							d.buildingId = bmb.buildingId
+						AND creatorUserId = #{memberId}
+						AND isValid = 1
+					),
+					'0'
+				) AS isPlan,
+					IFNULL(
+						(
+							SELECT
+								CONVERT(COUNT(planId), CHAR)
+							FROM
+								PM_Plan d
+							WHERE
+								d.buildingId = bmb.buildingId
+							AND creatorUserId = #{memberId}
+							AND isValid = 1
+							AND d.status != 0
+						),
+						'0'
+					) AS isLook,
+				</if>
+			(
+				SELECT
+					GROUP_CONCAT(CONCAT(smt1.tagName))
+				FROM
+					BM_BuildingTag bmbt1,
+					SM_Tag smt1
+				WHERE
+					bmb.isValid = 1
+				AND bmb.buildingId = bmbt1.buildingId
+				AND smt1.tagId = bmbt1.tagId
+				AND bmb.latitude IS NOT NULL
+				AND bmb.longitude IS NOT NULL
+				AND bmbt1.isShow = 1
+			) goodTagList,
+			(
+				SELECT
+					GROUP_CONCAT(CONCAT(smt2.tagName))
+				FROM
+					BM_BuildingTag bmbt2,
+					SM_Tag smt2
+				WHERE
+					bmb.isValid = 1
+				AND bmb.buildingId = bmbt2.buildingId
+				AND smt2.tagId = bmbt2.tagId
+				AND bmb.latitude IS NOT NULL
+				AND bmb.longitude IS NOT NULL
+				AND bmbt2.isShow = 2
+			) badTagList,
+			(
+				SELECT
+						switchStatus
+				FROM
+					FM_EnvelopeSwitch
+				WHERE
+					branchId = (
+						SELECT branchId FROM SM_User WHERE userId = 
+						( SELECT agentId FROM BM_Building WHERE buildingId = bmb.buildingId )
+					)
+				AND switchType = 1
+			) switchStatus,
+			(select COUNT(commentId) from CM_BuildingComment where buildingId = bmb.buildingId and isValid =1 and auditStatus = 1 and parentCommentId = 0) commentNum,
+			(SELECT
+				stg.tagName 
+				   FROM SM_Tag stg 
+				   LEFT JOIN BM_BuildingTag bbt on stg.tagId = bbt.tagId
+			WHERE
+			      bbt.isValid =1
+						and stg.isValid =1
+			      and bbt.buildingId = bmb.buildingId
+						AND tagName = "学区房" limit 1) as isSchoolHouse,
+			(SELECT
+				stg.tagName 
+				   FROM SM_Tag stg 
+				   LEFT JOIN BM_BuildingTag bbt on stg.tagId = bbt.tagId
+			WHERE
+			      bbt.isValid =1
+						and stg.isValid =1
+			      and bbt.buildingId = bmb.buildingId
+						AND tagName = "地铁房" limit 1) as isSubwayHouse
+		from 
+			BM_Building bmb
+			LEFT JOIN BA_BuildingScore bs on bmb.buildingId = bs.buildingId
+			LEFT JOIN BM_BuildingTag bt on bmb.buildingId = bt.buildingId
+			LEFT JOIN SM_Tag tg on bt.tagId = tg.tagId 
+		where 
+			bmb.isValid = 1 and bmb.latitude is not null and bmb.latitude != '' and bmb.longitude is not null and bmb.longitude != ''
+			<include refid="selCondition" />
+			GROUP BY bmb.buildingId
+			<if test="sortFlag == 0">
+				ORDER BY bmb.averagePrice
+			</if>
+			<if test="sortFlag == 1">
+				ORDER BY bmb.averagePrice DESC
+			</if>
+			<if test="sortFlag == 2">
+				ORDER BY bs.totalScore DESC
+			</if>
+			<if test="sortFlag == 3">
+				ORDER BY bs.totalScore
+			</if>
+			<if test="isPage != null and isPage == 1">
+				limit #{rowStart}, #{offset}
+			</if>
+	</select>
+	
+	<select id="findBuildingEnvelopeDtoCount" parameterType="com.jzhl.kfsq.dto.bm.BuildingDto" resultType="int">
+		select 
+			count(DISTINCT bmb.buildingId)
+		from 
+			BM_Building bmb
+			LEFT JOIN BA_BuildingScore bs on bmb.buildingId = bs.buildingId
+			LEFT JOIN BM_BuildingTag bt on bmb.buildingId = bt.buildingId
+			LEFT JOIN SM_Tag tg on bt.tagId = tg.tagId
+		where 
+			bmb.isValid = 1 and bmb.latitude is not null and bmb.latitude != '' and bmb.longitude is not null and bmb.longitude != ''
+			<include refid="selCondition" />
+	</select>
+	
+</mapper>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.ICommunityQualityMapper">
+
+	<resultMap id="bmCommunityqualityResultMap" type="com.jzhl.kfsq.entity.bm.CommunityQuality">
+		<id property="communityQualityId" column="communityQualityId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="developerId" column="developerId" />
+		<result property="propertyId" column="propertyId" />
+		<result property="locationId" column="locationId" />
+		<result property="greenRates" column="greenRates" />
+		<result property="carNumber" column="carNumber" />
+		<result property="ratioOfSpaces" column="ratioOfSpaces" />
+		<result property="IsSeparation" column="IsSeparation" />
+		<result property="spaceOfCarImg" column="spaceOfCarImg" />
+		<result property="greenImg" column="greenImg" />
+		<result property="parkFacilitiesImg" column="parkFacilitiesImg" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="createUserId" column="createUserId" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="bmCommunityqualityResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="bmCommunityqualityResultMap"></resultMap>
+
+	<!-- 插入数据 -->
+	<insert id="insertCommunityQuality" parameterType="com.jzhl.kfsq.entity.bm.CommunityQuality">
+	   insert into BM_CommunityQuality (
+	     buildingId,
+	     greenRates,
+	     carNumber,
+	     ratioOfSpaces,
+	     IsSeparation,
+	     spaceOfCarImg,
+	     greenImg,
+	     parkFacilitiesImg,
+	     createTime,
+	     updateTime,
+	     createUserId,
+	     isValid
+	   )values (
+	     #{buildingId},
+	     #{greenRates},
+	     #{carNumber},
+	     #{ratioOfSpaces},
+	     #{IsSeparation},
+	     #{spaceOfCarImg},
+	     #{greenImg},
+	     #{parkFacilitiesImg},
+	     now(),
+	     now(),
+	     #{createUserId},
+	     #{isValid}
+	   )
+	</insert>
+
+	<!-- 更新社区品质详情 -->
+	<update id="updateCommunityQuality" parameterType="com.jzhl.kfsq.entity.bm.CommunityQuality">
+	   update BM_CommunityQuality set
+	     greenRates=#{greenRates},
+	     carNumber=#{carNumber},
+	     ratioOfSpaces=#{ratioOfSpaces},
+	     IsSeparation=#{IsSeparation},
+	     spaceOfCarImg=#{spaceOfCarImg},
+	     greenImg=#{greenImg},
+	     parkFacilitiesImg=#{parkFacilitiesImg},
+	     updateUserId=#{updateUserId},
+	     updateTime=now()
+	   where 
+	    buildingId=#{buildingId} 
+	</update>
+
+	<!-- 社区品质详情 -->
+	<select id="getCommunityQuality" parameterType="com.jzhl.kfsq.dto.bm.CommunityQualityDto" resultType="com.jzhl.kfsq.dataset.bm.CommunityQualityDataSet">
+	   select
+	    bbd.buildingId,
+	    (
+			SELECT
+				COUNT(memberId)
+			FROM
+				(
+					SELECT
+						*
+					FROM
+						BA_MemberEvaluate
+					WHERE
+						buildingId = #{buildingId}
+					AND dimensionCode = 'communityQuality'
+					AND isValid = 1
+					GROUP BY
+						memberId
+				) a
+		) memberNum,
+		bbs.communityScore,
+		bbd.developer,
+		dic.ranking as developerRanking,
+		bbd.property,
+		sdy.ranking as propertyRanking,
+		saa.areaName,
+		saa.ranking as areaRanking,
+		bcq.IsSeparation,
+		bcq.ratioOfSpaces,
+		bcq.spaceOfCarImg,
+		bcq.greenRates,
+		bcq.greenImg,
+		bcq.parkFacilitiesImg
+		from BM_CommunityQuality bcq 
+		LEFT JOIN BM_Building bbd on bcq.buildingId = bbd.buildingId
+		LEFT JOIN SM_Area saa on bbd.secondAreaId = saa.areaId
+		LEFT JOIN BA_BuildingScore bbs on bbs.buildingId = bbd.buildingId
+		LEFT JOIN SM_Dictionary dic on dic.name = bbd.developer
+		LEFT JOIN SM_Dictionary sdy on sdy.name = bbd.property
+		where bbd.buildingId = #{buildingId}
+		group by dic.name
+	</select>
+	
+	<!-- 根据楼盘编号查询社区品质 -->
+	<select id="getCommunityQualityByBuildingId" parameterType="int" resultType="com.jzhl.kfsq.entity.bm.CommunityQuality">
+	    SELECT
+			*
+		FROM
+			BM_CommunityQuality
+		WHERE
+		  buildingId = #{buildingId}
+		AND
+		  isValid = 1 
+	</select>
+	
+</mapper> 

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingFeatureMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.bm.BuildingFeature" id="baseResultMap">
+		<id property="buildingId" column="buildingId" />
+		<result property="featureId" column="featureId" />
+		<result property="featureName" column="featureName" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		buildingId,
+		featureId, 
+		featureName 
+	</sql>
+	
+	<sql id="tables">
+		BM_BuildingFeature 
+	</sql>
+		<insert id="insert" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeature">
+		insert into BM_BuildingFeature (
+		buildingId,
+		featureId,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+		)values (
+		#{buildingId},
+		#{featureId},
+		#{creatorUserId},
+		now(),
+		#{updateUserId},
+		#{updateTime},
+		#{isValid}
+		)
+	</insert>
+<select id="getBuildingFeature" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeature" resultType="com.jzhl.kfsq.dataset.bm.BuildingFeatureDataSet">
+   select * from BM_BuildingFeature where buildingId=#{buildingId}
+
+</select>
+<delete id="delete" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeature">
+delete from BM_BuildingFeature where buildingId=#{buildingId}
+</delete>	
+
+	<update id="inValid" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeature">
+		update 
+		BM_BuildingFeature
+		set 
+		isValid = 0
+		where id = #{id}
+	</update>
+
+	<select id="findBuildingFeature" parameterType="com.jzhl.kfsq.entity.bm.BuildingFeature" resultType="com.jzhl.kfsq.entity.bm.BuildingFeature">
+		select 
+		id,
+		buildingId,
+		featureId,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+ 		from 
+ 		BM_BuildingFeature 
+ 		where 
+ 		buildingId=#{buildingId}
+	</select>
+</mapper>

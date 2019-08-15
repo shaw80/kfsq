@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.ba.IMemberEvaluateMapper">
+
+	<insert id="insertMemberEvaluate" parameterType="com.jzhl.kfsq.entity.ba.MemberEvaluate">
+		insert into BA_MemberEvaluate
+		(
+
+		<if test="commentId != null">
+			commentId,
+		</if>
+		memberId,
+		buildingId,
+		dimensionCode,
+		dimensionValue,
+		createTime,
+		updateTime,
+		createUserId,
+		updateUserId
+		)
+		values
+		(
+		<if test="commentId != null">
+			#{commentId},
+		</if>
+		#{memberId},
+		#{buildingId},
+		#{dimensionCode},
+		#{dimensionValue},
+		now(),
+		now(),
+		#{createUserId},
+		#{updateUserId}
+		)
+	</insert>
+	
+	<select id="getDimensionWeightSumValueByCommentId" parameterType="int" resultType="Integer">
+        SELECT
+			SUM( bad.weight * 0.01 * bame.dimensionValue) AS WeightSumValue
+		FROM 
+			BA_MemberEvaluate bame
+		INNER JOIN
+			BA_Dimension bad
+		ON
+			bad.dimensionCode = bame.dimensionCode and bad.dimensionType = 2		
+		WHERE
+			bame.commentId = #{commentId}
+    </select>
+    
+    <!-- 五个维度评分 -->
+    <select id="findBuildingScore" parameterType="int" resultType="com.jzhl.kfsq.dataset.ba.MemberScoreDataSet">
+        SELECT
+			bame.dimensionCode,
+			( bad.weight * 0.01 * bame.dimensionValue) AS weightSumValue
+		FROM 
+			BA_MemberEvaluate bame
+		INNER JOIN
+			BA_Dimension bad
+		ON
+			bad.dimensionCode = bame.dimensionCode and bad.dimensionType = 2		
+		WHERE
+			bame.commentId = #{commentId}
+    </select>
+    
+    <!-- 根据维度编码分页查询用户评价 -->
+	<select id="findMemberEvaluateDataSetByDimensionCode" parameterType="com.jzhl.kfsq.dto.ba.MemberEvaluatePageDto" resultType="com.jzhl.kfsq.dataset.ba.MemberEvaluateList">
+		SELECT
+			mmm.headPortrait headPortrait,
+		    mmm.nickName nickName,
+		    bame.dimensionValue dimensionValue
+		FROM
+			BA_MemberEvaluate bame,
+		    MM_Member mmm
+		WHERE
+			bame.buildingId = #{buildingId}
+		AND bame.dimensionCode = #{dimensionCode}
+		AND bame.isValid = 1
+		AND bame.memberId = mmm.memberId
+		ORDER BY
+			bame.createTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 根据维度编码统计用户评价总数 -->
+	<select id="countMemberEvaluateDataSetByDimensionCode" parameterType="com.jzhl.kfsq.dto.ba.MemberEvaluatePageDto" resultType="Integer">
+		SELECT
+			COUNT(memberId)
+		FROM
+			(
+				SELECT
+					bame.memberId memberId
+				FROM
+					BA_MemberEvaluate bame,
+					MM_Member mmm
+				WHERE
+					bame.buildingId = #{buildingId}
+				AND bame.dimensionCode = #{dimensionCode}
+				AND bame.isValid = 1
+				AND bame.memberId = mmm.memberId
+				GROUP BY
+					bame.memberId
+			) a
+	</select>
+	
+	<!-- 根据评论ID，评论人ID查询其对该楼盘打分情况 -->
+	<select id="getMemberEvaluateList" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" resultType="com.jzhl.kfsq.entity.ba.MemberEvaluate">
+		SELECT * 
+		FROM BA_MemberEvaluate 
+		WHERE commentId = #{commentId}
+		<if test="creatorUserId != null">
+			AND memberId = #{creatorUserId}
+		</if>
+		AND isValid = 1
+	</select>
+	
+	<!-- 查询用户端维度权重 -->
+	<select id="getDimensionList" resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT * FROM BA_Dimension 
+		WHERE dimensionType=2
+	</select>
+	
+	<!-- 查询评论列表 -->
+	<select id="findMemberEvaluateList" parameterType="Integer" resultType="com.jzhl.kfsq.entity.ba.MemberEvaluate">
+		select * from BA_MemberEvaluate WHERE buildingId = #{buildingId} GROUP BY commentId
+	</select>
+
+</mapper>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IEnvelopeCashMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.fm.EnvelopeCash" id="baseResultMap">
+		<id property="envelopeCashId" column="envelopeCashId" />
+		<result property="receiveId" column="receiveId" />
+		<result property="applicationId" column="applicationId" />
+		<result property="price" column="price" />
+		<result property="createTime" column="createTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		envelopeCashId,
+		receiveId,
+		applicationId,
+		price,
+		createTime,
+		isValid
+	</sql>
+	
+	<sql id="tableName">
+        FM_EnvelopeCash
+    </sql>
+	
+	<!-- 添加提现申请信息 -->
+	<insert id="insertEnvelopeCash" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeCash">
+		insert into 
+		<include refid="tableName" />
+		(
+			receiveId,
+			applicationId,
+			price,
+			createTime
+		)
+		values
+		(
+			#{receiveId},
+			#{applicationId},
+			#{price},
+			now()
+		)
+	</insert>
+	
+	<!-- 删除中间表 -->
+	<update id="deleteEnvelopeCash" parameterType="Int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		envelopeCashId = #{envelopeCashId}
+	</update>
+	
+	<!-- 根据领取编号查询中间表集合 -->
+	<select id="findEnvelopeCashByReceiveId" parameterType="Int" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />
+		FROM <include refid="tableName" />
+		WHERE receiveId = #{receiveId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据提现编号查询中间表集合 -->
+	<select id="findEnvelopeCashByApplicationId" parameterType="String" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />
+		FROM <include refid="tableName" />
+		WHERE applicationId = #{applicationId}
+		AND isValid = 1
+	</select>
+	
+</mapper>

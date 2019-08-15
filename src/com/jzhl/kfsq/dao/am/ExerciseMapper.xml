@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.am.IExerciseMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.am.Exercise" id="baseResultMap">
+		<id property="exerciseId" column="exerciseId" />
+		<result property="title" column="title" />
+		<result property="beginTime" column="beginTime" />
+		<result property="endTime" column="endTime" />
+		<result property="content" column="content" />
+		<result property="url" column="url" />
+		<result property="image" column="image" />
+		<result property="joinCount" column="joinCount" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		exerciseId,
+		title,
+		beginTime,
+		endTime,
+		content,
+		url,
+		image,
+		joinCount,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<!-- 新增活动 -->
+	<insert id="insertExercise" parameterType="com.jzhl.kfsq.dto.am.ExerciseDto">
+	   insert into AM_Exercise (
+	     <if test="title != null">
+	     	title,
+	     </if>
+	     <if test="beginTime != null">
+	     	beginTime,
+	     </if>
+	     <if test="endTime != null">
+	     	endTime,
+	     </if>
+	     <if test="content != null">
+	     	content,
+	     </if>
+	     <if test="url != null">
+	     	url,
+	     </if>
+	     <if test="image != null">
+	     	image,
+	     </if>
+	     <if test="joinCount != null">
+	     	joinCount,
+	     </if>
+	     	isValid,
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+	     </if>
+	     	createTime,
+	     <if test="updateUserId != null">
+	     	updateUserId,
+	     </if>
+	     	updateTime
+	   )values (
+	   	 <if test="title != null">
+	     	#{title},
+	     </if>
+	     <if test="beginTime != null">
+	     	 #{beginTime},
+	     </if>
+	     <if test="endTime != null">
+	     	 #{endTime},
+	     </if>
+	     <if test="content != null">
+	     	#{content},
+	     </if>
+	     <if test="url != null">
+	       #{url},
+	     </if>
+	     <if test="image != null">
+	     	#{image},
+	     </if>
+	     <if test="joinCount != null">
+	     	#{joinCount},
+	     </if>
+	     	1,
+	     <if test="creatorUserId != null">
+	     	 #{creatorUserId},
+	     </if>
+	     	now(),
+	     <if test="updateUserId != null">
+	     	#{updateUserId},
+	     </if>
+	     	 now()
+	     )
+	</insert>
+	
+	<!-- 开通、关闭活动 -->
+	<update id="updateExercise" parameterType="com.jzhl.kfsq.dto.am.ExerciseDto">
+	   update AM_Exercise set
+	   	 updateTime = now()
+	   	 <if test="isValid != null">
+			,isValid = #{isValid}
+		 </if>
+		 <if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		 </if>
+		 <if test="title != null">
+			,title = #{title}
+		 </if>
+		 <if test="joinCount != null">
+			,joinCount = #{joinCount}
+		 </if>
+		 <if test="image != null">
+			,image = #{image}
+		 </if>
+		 <if test="beginTime != null">
+			,beginTime = #{beginTime}
+		 </if>
+		 <if test="endTime != null">
+			,endTime = #{endTime}
+		 </if>
+		 <if test="url != null">
+			,url = #{url}
+		 </if>
+		 <if test="content != null">
+			,content = #{content}
+		 </if>
+	   where 
+	    exerciseId=#{exerciseId} 
+	</update>
+	
+	<select id="findExercisesPage" parameterType="com.jzhl.kfsq.common.base.PageListCondition" resultType="com.jzhl.kfsq.entity.am.Exercise">
+		select t1.*, t2.name
+		from AM_Exercise t1 
+		LEFT JOIN SM_User t2 on t1.creatorUserId = t2.userId
+		order by createTime desc
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	<select id="findExercisesPageCount" parameterType="com.jzhl.kfsq.common.base.PageListCondition" resultType="int">
+		select count(exerciseId)
+		from AM_Exercise
+	</select>
+	
+	<!-- 查看活动详情 -->
+	<select id="getExerciseInfo" parameterType="com.jzhl.kfsq.dto.am.ExerciseDto" resultType="com.jzhl.kfsq.dto.am.ExerciseDto">
+	    select * from AM_Exercise where exerciseId = #{exerciseId}
+	</select>
+	
+</mapper>

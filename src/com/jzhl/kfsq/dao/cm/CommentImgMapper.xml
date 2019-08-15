@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.ICommentImgMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.cm.CommentImg" id="baseResultMap">
+		<id property="imgId" column="imgId" />
+		<result property="commentId" column="commentId" />
+		<result property="commentType" column="commentType" />
+		<result property="imgName" column="imgName" />
+		<result property="imgDes" column="imgDes" />
+		<result property="path" column="path" />
+		<result property="createTime" column="createTime" />
+		<result property="isUse" column="isUse" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.cm.CommentImgDataSet" id="giftResultMap">
+		<result property="path" column="path" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		imgId,
+		commentId,
+		commentType,
+		imgName,
+		imgDes,
+		path,
+		createTime,
+		isUse
+	</sql>
+	
+	<sql id="tableName">
+        CM_CommentImg
+    </sql>
+	
+	<select id="findCommentImg" parameterType="com.jzhl.kfsq.entity.cm.CommentImg" resultType="com.jzhl.kfsq.entity.cm.CommentImg">
+		select 
+		<include refid="baseColumns" />
+		from CM_CommentImg
+		where
+		<trim prefixOverrides="and">
+			<if test="isUse != null">
+				and isUse = #{isUse}
+			</if>
+			<if test="commentId != null">
+				and commentId = #{commentId}
+			</if>
+			<if test="commentType != null">
+				and commentType = #{commentType}
+			</if>
+		</trim>
+	</select>
+	
+	<insert id="insertCommentImg">
+		insert into CM_CommentImg
+		(
+			commentId
+			,commentType
+			<if test = "imgName != null">
+				,imgName
+			</if>
+			<if test = "imgDes != null">
+				,imgDes
+			</if>
+			,path
+			,createTime
+			,isUse
+		)
+		value
+		(
+			#{commentId}
+			,#{commentType}
+			<if test = "imgName != null">
+				,#{mgName}
+			</if>
+			<if test = "imgDes != null">
+				,#{imgDes}
+			</if>
+			,#{path}
+			,now()
+			,'1'
+		)
+	</insert>
+	
+	<select id="findCommentImgByCommentId" parameterType="Integer" resultMap="giftResultMap">
+		select 
+		path
+		from
+		<include refid="tableName" />
+		where
+		commentId = #{commentId}
+	</select>
+	
+	<!-- 区域代理添加评论-->
+	<insert id="insertAgentCommentImg" parameterType="com.jzhl.kfsq.entity.cm.CommentImg">
+		insert into CM_CommentImg (
+		commentId,
+		commentType,
+		<if test = "imgName != null">
+			,imgName
+		</if>
+		<if test = "imgDes != null">
+			,imgDes
+		</if>
+		path,
+		createTime,
+		isUse
+		)values (
+		#{commentId},
+		#{commentType},
+		<if test = "imgName != null">
+			,#{mgName}
+		</if>
+		<if test = "imgDes != null">
+			,#{imgDes}
+		</if>
+		#{path},
+		now(),
+		#{isUse}
+		)
+	</insert>
+	
+	<!-- 根据评论ID删除原来的图片路径，编辑时修改用 -->
+	<delete id="deleteImg" parameterType="Integer">
+		delete from CM_CommentImg where commentId=#{commentId}
+	</delete>
+	
+	<!-- 根据评论编号查询对应图片 -->
+	<select id="findMyCommentImgByCommentId" parameterType="Integer" resultType="com.jzhl.kfsq.dataset.cm.MyCommentImg">
+		SELECT
+			imgId,
+			commentId,
+			path
+		FROM
+			CM_CommentImg
+		WHERE
+			commentId = #{commentId}
+	</select>
+	
+</mapper>

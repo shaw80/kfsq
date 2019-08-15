@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IFeatureMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.Feature" id="baseResultMap">
+		<id property="featureId" column="featureId" />
+		<result property="featureName" column="featureName" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+
+	<sql id="baseColumns">
+		featureId,
+		featureName,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+
+	<!-- 添加特色 -->
+	<insert id="insertFeature" parameterType="com.jzhl.kfsq.entity.sm.Feature"
+		useGeneratedKeys="true" keyProperty="featureId">
+		insert into SM_Feature
+		(
+		featureName
+		<if test="creatorUserId != null">
+			,creatorUserId
+		</if>
+		,createTime
+		,isValid
+		)
+		values
+		(
+		#{featureName}
+		<if test="creatorUserId != null">
+			,#{creatorUserId}
+		</if>
+		,now()
+		,1
+		)
+	</insert>
+
+	<!-- 编辑特色 -->
+	<update id="updateFeature" parameterType="com.jzhl.kfsq.entity.sm.Feature">
+		update SM_Feature set
+		updateTime=now(),
+		<if test="featureName != null">
+			featureName=#{featureName},
+		</if>
+		<if test="isValid != null">
+			isValid=#{isValid},
+		</if>
+		<if test="updateUserId != null">
+			updateUserId=#{updateUserId}
+		</if>
+		where
+		featureId=#{featureId}
+	</update>
+
+	<select id="findFeature" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		SM_Feature
+		where isValid=1
+		ORDER BY createTime desc
+	</select>
+
+	<!-- 查询特色列表 -->
+	<select id="findFeatureList" parameterType="map" resultMap="baseResultMap">
+		select * from SM_Feature
+		ORDER BY createTime desc
+		limit #{rowstart},
+		#{offset}
+	</select>
+
+	<!-- 查询特色列表总数 -->
+	<select id="getFeatureDataCount" parameterType="map" resultType="Integer">
+		select count(featureId) from SM_Feature
+	</select>
+
+	<select id="findAllFeature" parameterType="map" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		SM_Feature
+	</select>
+
+	<!-- 查询特色结果集 -->
+	<select id="findFeatureDataSet" resultType="com.jzhl.kfsq.dataset.sm.FeatureDataSet">
+		SELECT
+			featureId,
+			featureName
+		FROM
+			SM_Feature
+		WHERE
+			isValid = 1
+	</select>
+
+</mapper>

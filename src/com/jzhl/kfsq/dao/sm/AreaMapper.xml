@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IAreaMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.Area" id="baseResultMap">
+		<id property="areaId" column="areaId" />
+		<result property="areaName" column="areaName" />
+		<result property="cityId" column="cityId" />
+		<result property="longitude" column="longitude" />
+		<result property="latitude" column="latitude" />
+		<result property="parentId" column="parentId" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		areaId,
+		areaName,
+		cityId,
+		longitude,
+		latitude,
+		parentId,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<select id="findArea" parameterType="com.jzhl.kfsq.entity.sm.Area" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns"/>
+		from SM_Area 
+		<where>
+			cityId = (select branchCityId from SM_Branch where branchId = (SELECT branchId from SM_User where userId = #{creatorUserId}))
+			<if test="cityId != null">
+				and cityId = #{cityId}
+			</if>
+			<if test="cityName != null">
+				and cityName = #{cityName}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 根据登录人ID 获取该城市区域列表 -->
+	<select id="findAreaList" parameterType="map" resultMap="baseResultMap">
+		select * from SM_Area 
+		<where>
+			cityId = (select branchCityId from SM_Branch 
+			                where branchId = (SELECT branchId from SM_User 
+			                                     where userId = #{creatorUserId}))
+			and (parentId = 0 or parentId is null)
+		</where>
+		limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 根据登录人ID 获取该城市区域列表总数 -->
+	<select id="getAreaDataCount" parameterType="map" resultType="Integer">
+		select count(areaId)
+		from SM_Area 
+		<where>
+			cityId = (select branchCityId from SM_Branch 
+			                where branchId = (SELECT branchId from SM_User 
+			                                     where userId = #{creatorUserId}))
+			and (parentId = 0 or parentId is null)
+		</where>
+	</select>
+	
+	<!-- 根据城市ID查询区域信息 -->
+	<select id="findAreaByCityName" parameterType="com.jzhl.kfsq.dto.sm.AreaDto" resultMap="baseResultMap">
+		SELECT 
+			a.areaId as areaId,
+			a.areaName as areaName,
+			a.cityId as cityId,
+			a.longitude as longitude,
+			a.latitude as latitude,
+			a.isValid as isValid,
+			a.creatorUserId as creatorUserId,
+			a.createTime as createTime,
+			a.updateUserId as updateUserId,
+			a.updateTime as updateTime
+		FROM
+			SM_Area a,
+			SM_ProvinceCity c
+		WHERE
+			c.areaName = #{cityName}
+		AND c.areaId = a.cityId
+	</select>
+	
+	<!-- 根据城市ID查询区域信息 -->
+	<select id="findAreaByCityId" parameterType="com.jzhl.kfsq.entity.sm.Area" resultMap="baseResultMap">
+		SELECT 
+		<include refid="baseColumns"/>
+		FROM SM_Area 
+		<where>
+			<if test="cityId != null">
+				parentId is null and cityId = #{cityId} or parentId = 0 
+			</if>
+			<if test="areaId != null">
+				and parentId = #{areaId}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 根据城市ID查询App首页列表的区域信息属性集合 -->
+	<select id="findAreaDateSet" parameterType="Int" resultType="com.jzhl.kfsq.dataset.sm.AreaDataSet">
+		SELECT
+			areaId,
+			areaName
+		FROM
+			SM_Area
+		WHERE
+			cityId = #{cityId}
+		AND isValid = 1
+	</select>
+	
+  <select id="findAreaBybranchId" parameterType="java.lang.Integer" resultMap="baseResultMap">
+	  select 
+	    <include refid="baseColumns"/>
+	   from 
+	    SM_Area 
+	   where 
+	    cityId =(select b.branchCityId from SM_Branch b LEFT JOIN SM_BranchCity c on b.branchCityId = c.branchCityId where b.branchId =#{branchId} and c.status=1)
+	    and parentId is null 
+	    or parentId = 0
+  </select>
+  
+  <insert id="insertArea" parameterType="com.jzhl.kfsq.entity.sm.Area">
+	  insert into SM_Area(
+	  areaName,
+	  cityId,
+	  longitude,
+	  latitude,
+	  isValid,
+	  creatorUserId,
+	  createTime
+	  )
+	  values(
+	  #{areaName},
+	  (select branchCityId from SM_Branch where branchId = (SELECT branchId from SM_User where userId = #{creatorUserId})),
+	  #{longitude},
+	  #{latitude},
+	  #{isValid},
+	  #{creatorUserId},
+	  now()
+	  )
+  </insert>
+  <update id="updateArea" parameterType="com.jzhl.kfsq.entity.sm.Area">
+	  update SM_Area set
+	  updateTime = now()
+	  	<if test="areaName != null">
+			,areaName = #{areaName}
+		</if>
+		  <if test="longitude != null">
+			,longitude = #{longitude}
+		</if>
+		<if test="latitude != null">
+			,latitude = #{latitude}
+		</if>
+		where areaId =#{areaId}
+  </update>
+  
+	<select id="getArea" parameterType="java.lang.Integer" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns"/>
+		from 
+		SM_Area
+		where areaId = #{areaId}
+	</select>
+	
+	<!-- 根据一级区域 areaId 获取二级区域列表 -->
+	<select id="findScecondAreaList" parameterType="map" resultMap="baseResultMap">
+		select * from SM_Area where isValid = 1 and parentId = #{areaId}
+	</select>
+	
+	<!-- 根据一级区域 areaId 获取二级区域列表 - 分页-->
+	<select id="findSecondAreaListByPage" parameterType="map" resultMap="baseResultMap">
+		select * from SM_Area where isValid = 1 and parentId = #{areaId}
+		limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 根据一级区域 areaId 获取二级区域列表 - 分页-->
+	<select id="findSecondAreaListByPageDataCount" parameterType="map" resultType="Integer">
+		select count(areaId) from SM_Area where isValid = 1 and parentId = #{areaId}
+	</select>
+	
+</mapper>

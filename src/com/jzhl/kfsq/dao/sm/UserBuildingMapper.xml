@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IUserBuildingMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.UserBuilding" id="baseResultMap">
+		<id property="userBuildingId" column="userBuildingId" />
+		<result property="userId" column="userId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="status" column="status" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		userBuildingId,
+		userId,
+		buildingId,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		status
+	</sql>
+	
+	<sql id="tableName">
+        SM_UserBuilding
+    </sql>
+	
+	<!-- 添加中间关系 -->
+	<insert id="insertUserBuilding" parameterType="com.jzhl.kfsq.entity.sm.UserBuilding">
+		insert into 
+		<include refid="tableName" />
+		(
+			userId,
+			buildingId,
+			creatorUserId,
+			createTime
+		)
+		values
+		(
+			#{userId},
+			#{buildingId},
+			#{creatorUserId},
+			now()
+		)
+	</insert>
+	
+	<!-- 根据用户编号查询中间关系-->
+	<select id="getUserBuildingByUserId" parameterType="Integer" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />  
+		FROM <include refid="tableName" /> 
+		WHERE userId = #{userId}
+	</select>
+	
+</mapper>

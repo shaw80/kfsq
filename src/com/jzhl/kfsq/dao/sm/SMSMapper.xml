@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.ISMSMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.SMSInfo" id="baseResultMap">
+		<id property="codeId" column="codeId" />
+		<result property="mobilePhone" column="mobilePhone" />
+		<result property="smsType" column="smsType" />
+		<result property="smsMessageSid" column="smsMessageSid" />
+		<result property="dateCreated" column="dateCreated" />
+		<result property="statusCode" column="statusCode" />
+		<result property="templateId" column="templateId" />
+		<result property="templateParam1" column="templateParam1" />
+		<result property="templateParam2" column="templateParam2" />
+		<result property="templateParam3" column="templateParam3" />
+		<result property="templateParam4" column="templateParam4" />
+		<result property="templateParam5" column="templateParam5" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		codeId,
+		mobilePhone,
+		smsMessageSid,
+		dateCreated,
+		statusCode,
+		templateId,
+		templateParam1,
+		templateParam2,
+		templateParam3,
+		templateParam4,
+		templateParam5,
+		createTime
+	</sql>
+	
+	<insert id="insertSMS" parameterType="com.jzhl.kfsq.entity.sm.SMSInfo">
+		insert into SM_SMSInfo
+		(
+			mobilePhone,
+			smsType,
+			<if test="smsMessageSid != null">
+				smsMessageSid,
+			</if>
+			<if test="dateCreated != null">
+				dateCreated,
+			</if>
+			<if test="statusCode != null">
+				statusCode,
+			</if>
+			templateId,
+			<if test="templateParam1 != null">
+				templateParam1,
+			</if>
+			<if test="templateParam1 != null">
+				templateParam2,
+			</if>
+			<if test="templateParam1 != null">
+				templateParam3,
+			</if>
+			<if test="templateParam1 != null">
+				templateParam4,
+			</if>
+			<if test="templateParam1 != null">
+				templateParam5,
+			</if>
+			createTime
+		)
+		values 
+		(
+			#{mobilePhone},
+			#{smsType},
+			<if test="smsMessageSid != null">
+				#{smsMessageSid},
+			</if>
+			<if test="dateCreated != null">
+				#{dateCreated},
+			</if>
+			<if test="statusCode != null">
+				#{statusCode},
+			</if>
+			#{templateId},
+			<if test="templateParam1 != null">
+				#{templateParam1},
+			</if>
+			<if test="templateParam1 != null">
+				#{templateParam2},
+			</if>
+			<if test="templateParam1 != null">
+				#{templateParam3},
+			</if>
+			<if test="templateParam1 != null">
+				#{templateParam4},
+			</if>
+			<if test="templateParam1 != null">
+				#{templateParam5},
+			</if>
+			now()
+		)
+	</insert>
+	
+	<select id="getNewestSMS" parameterType="com.jzhl.kfsq.dto.sm.SMSInfoDto" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from 
+		SM_SMSInfo
+		where 
+		mobilePhone = #{mobilePhone}
+		and smsType = #{smsType}
+		and statusCode = '000000'
+		and createTime=(
+			select 
+			max(createTime)
+			from 
+			SM_SMSInfo
+			where 
+			mobilePhone = #{mobilePhone}
+			and smsType = #{smsType}
+			and statusCode = '000000'
+			<if test="templateParam1 != null">
+				and templateParam1 = #{templateParam1}
+			</if>
+			<if test="templateParam2 != null">
+				and templateParam2 = #{templateParam2}
+			</if>
+			<if test="templateParam3 != null">
+				and templateParam3 = #{templateParam3}
+			</if>
+			<if test="templateParam4 != null">
+				and templateParam4 = #{templateParam4}
+			</if>
+			<if test="templateParam5 != null">
+				and templateParam5 = #{templateParam5}
+			</if>
+		)
+		<if test="templateParam1 != null">
+			and templateParam1 = #{templateParam1}
+		</if>
+		<if test="templateParam2 != null">
+			and templateParam2 = #{templateParam2}
+		</if>
+		<if test="templateParam3 != null">
+			and templateParam3 = #{templateParam3}
+		</if>
+		<if test="templateParam4 != null">
+			and templateParam4 = #{templateParam4}
+		</if>
+		<if test="templateParam5 != null">
+			and templateParam5 = #{templateParam5}
+		</if>
+	</select>
+	
+	<update id="updateSendTimes" parameterType="java.lang.Integer">
+		update 
+		SM_SMSInfo 
+		set 
+		sendtimes = (sendtimes + 1),
+		updateTime = now()
+		where 
+		codeId = #{codeId}
+	</update>
+
+</mapper>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IRightMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.Right" id="baseResultMap">
+		<id property="rightId" column="rightId" />
+		<result property="parentId" column="parentId" />
+		<result property="rightName" column="rightName" />
+		<result property="menu" column="menu" />
+		<result property="imgName" column="imgName" />
+		<result property="managerType" column="managerType" />
+		<result property="isMenu" column="isMenu" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		rightId,
+		parentId,
+		rightName,
+		menu,
+		imgName,
+		managerType,
+		isMenu,
+		isValid,
+		creatorUserId,
+		createTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_Right
+    </sql>
+	
+	<!-- 添加权限信息 -->
+	<insert id="insertRight" parameterType="com.jzhl.kfsq.entity.sm.Right">
+		insert into 
+		<include refid="tableName" />
+		(
+			rightName
+			,creatorUserId
+			,createTime
+		)
+		values
+		(
+			#{rightName}
+			,#{creatorUserId}
+			,#{createTime}
+		)
+	</insert>
+	
+	<!-- 禁用权限信息 -->
+	<update id="deleteRight" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		rightId = #{rightId}
+	</update>
+	
+	<!-- 更新权限信息 -->
+	<update id="updateRight" parameterType="com.jzhl.kfsq.entity.sm.Right">
+		update 
+		<include refid="tableName" /> 
+		set
+		rightName = #{rightName}
+		where
+		rightId = #{rightId}
+	</update>
+	
+	<!-- 根据权限编号查询权限信息 -->
+	<select id="getRight" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		rightId = #{rightId}
+	</select>
+	
+	<!-- 分页查询全部权限信息 -->
+	<select id="findAllByPage" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+	</select>
+	
+	<!-- 查询全部权限信息 -->
+	<select id="findAdminRightList" resultMap="baseResultMap">
+		select * from SM_Right where isValid = 1 
+	</select>
+	
+	<!-- 添加中间表信息 -->
+	<insert id="insertRoleRight" parameterType="com.jzhl.kfsq.entity.sm.RoleRight">
+		insert into SM_RoleRight
+		(
+			roleId
+			,rightId
+			,creatorUserId
+			,createTime
+		)
+		values
+		(
+			#{roleId}
+			,#{rightId}
+			,#{creatorUserId}
+			,now()
+		)
+	</insert>
+	
+	<!-- 根据角色编号删除其权限信息 -->
+	<delete id="deleteRightByRoleId" parameterType="com.jzhl.kfsq.entity.sm.Role">
+	   delete from 
+	     SM_RoleRight 
+	   where 
+	    roleId=#{roleId} 
+	</delete>
+	
+	<!-- WEB端根据角色编号和父编号查询权限列表 -->
+	<select id="findRightByParentId" parameterType="com.jzhl.kfsq.dto.sm.RightQueryDto" resultType="com.jzhl.kfsq.dataset.sm.RightDataSet">
+		SELECT
+			rightId,
+			parentId,
+			rightName
+		FROM
+			SM_Right
+		WHERE
+			managerType = (
+				SELECT
+					managerType
+				FROM
+					SM_Role
+				WHERE
+					<if test="roleId != null">
+						roleId = #{roleId}
+					</if>
+					<if test="roleCode != null">
+						roleCode = #{roleCode}
+					AND
+					    roleType = '0'
+					</if>
+			)
+		<if test="parentId == null and roleId != null">
+			AND parentId = (SELECT rightId FROM SM_Right WHERE managerType = (SELECT managerType FROM SM_Role WHERE roleId = #{roleId}) AND parentId = 0)
+		</if>
+		<if test="parentId == null and roleCode != null">
+			AND parentId = (SELECT rightId FROM SM_Right WHERE managerType = (SELECT managerType FROM SM_Role WHERE roleCode = #{roleCode}) AND parentId = 0)
+		</if>
+		<if test="parentId != null">
+			AND parentId = #{parentId}
+		</if>
+	</select>
+	
+	<!-- 查询全部一级菜单 -->
+	<select id="findFirstRights" parameterType="String" resultType="com.jzhl.kfsq.dataset.sm.RightDataSet">
+		SELECT
+			rightId,
+			parentId,
+			rightName
+		FROM
+			SM_Right
+		WHERE
+			parentId = (
+				SELECT
+					rightId
+				FROM
+					SM_Right
+				WHERE
+					managerType = #{managerType}
+				AND parentId = 0
+			)
+	</select>
+	
+	<!-- 查询全部二级菜单 -->
+	<select id="findAllSecondRights" parameterType="String" resultType="com.jzhl.kfsq.dataset.sm.RightDataSet">
+		SELECT
+			rightId,
+			parentId,
+			rightName
+		FROM
+			SM_Right
+		WHERE
+			managerType = #{managerType}
+		AND parentId != 0
+		AND parentId != (
+			SELECT
+				rightId
+			FROM
+				SM_Right
+			WHERE
+				parentId = 0
+			AND managerType = #{managerType}
+		)
+		AND isMenu = '1'
+	</select>
+
+</mapper>

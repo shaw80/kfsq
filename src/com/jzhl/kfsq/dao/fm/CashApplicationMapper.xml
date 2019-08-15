@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.ICashApplicationMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.fm.CashApplication" id="baseResultMap">
+		<id property="applicationId" column="applicationId" />
+		<result property="receiveAccountId" column="receiveAccountId" />
+		<result property="payAccountId" column="payAccountId" />
+		<result property="price" column="price" />
+		<result property="status" column="status" />
+		<result property="failReason" column="failReason" />
+		<result property="serialNum" column="serialNum" />
+		<result property="applicationTime" column="applicationTime" />
+		<result property="payTime" column="payTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="applicationPersonId" column="applicationPersonId" />
+		<result property="applicationPersonName" column="applicationPersonName" />
+		<result property="payPersonId" column="payPersonId" />
+		<result property="payPersonName" column="payPersonName" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.CashDealReceiveDataSet" id="dealResultMap">
+		<result property="applicationTime" column="applicationTime" />
+		<result property="cashMode" column="cashMode" />
+		<result property="price" column="price" />
+		<result property="status" column="status" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.CashDetailReceiveDataSet" id="detailResultMap">
+		<result property="applicationId" column="applicationId" />
+		<result property="price" column="price" />
+		<result property="applicationTime" column="applicationTime" />
+		<result property="status" column="status" />
+		<result property="cashType" column="cashType" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.fm.CashReceiveDataSet" id="cashResultMap">
+		<result property="applicationId" column="applicationId" />
+		<result property="nickName" column="nickName" />
+		<result property="account" column="account" />
+		<result property="applicationTime" column="applicationTime" />
+		<result property="accountType" column="accountType" />
+		<result property="price" column="price" />
+		<result property="balance" column="balance" />
+		<result property="status" column="status" />
+	</resultMap>
+	
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="baseResultMap"></resultMap>
+	
+	<sql id="baseColumns">
+		applicationId,
+		receiveAccountId,
+		payAccountId,
+		price,
+		status,
+		failReason,
+		serialNum,
+		applicationTime,
+		payTime,
+		updateTime,
+		applicationPersonId,
+		applicationPersonName,
+		payPersonId,
+		payPersonName,
+		isValid
+	</sql>
+	
+	<sql id="tableName">
+        FM_CashApplication
+    </sql>
+	
+	<!-- 添加提现申请信息 -->
+	<insert id="insertCashApplication" parameterType="com.jzhl.kfsq.entity.fm.CashApplication">
+		insert into 
+		<include refid="tableName" />
+		(
+			applicationId,
+			receiveAccountId,
+			price,
+			status,
+			applicationTime,
+			applicationPersonId,
+			applicationPersonName,
+			updateTime,
+			isValid
+		)
+		values
+		(
+			#{applicationId},
+			#{receiveAccountId},
+			#{price},
+			#{status},
+			now(),
+			#{applicationPersonId},
+			#{applicationPersonName},
+			now(),
+			1
+		)
+	</insert>
+	
+	<!-- 删除提现申请信息 -->
+	<update id="deleteCashApplication" parameterType="String">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		applicationId = #{applicationId}
+	</update>
+	
+	<!-- 更新提现申请信息 -->
+	<update id="updateCashApplication" parameterType="com.jzhl.kfsq.entity.fm.CashApplication">
+		update 
+		<include refid="tableName" /> 
+		set
+		<if test="payAccountId != null">
+			payAccountId = #{payAccountId},
+		</if>
+		<if test="auditingPersonId != null">
+			auditingPersonId = #{auditingPersonId},
+		</if>
+		<if test="failReason != null">
+			failReason = #{failReason},
+		</if>
+		<if test="serialNum != null">
+			serialNum = #{serialNum},
+		</if>
+		<if test="batchNum != null">
+			batchNum = #{batchNum},
+		</if>
+		<if test="payTime != null">
+			payTime = #{payTime},
+		</if>
+		<if test="payPersonId != null">
+			payPersonId = #{payPersonId},
+		</if>
+		<if test="payPersonName != null">
+			payPersonName = #{payPersonName},
+		</if>
+		updateTime = now(),
+		status = #{status}
+		where
+		applicationId = #{applicationId}
+	</update>
+	
+	<!-- 批量更新提现申请信息 -->
+	<update id="updateBatchCash" parameterType="java.util.List">
+		<foreach collection="list" item="ca" index="index" open="" close="" separator=";">
+			update 
+			<include refid="tableName" /> 
+			set
+			<if test="ca.payAccountId != null">
+				payAccountId = #{ca.payAccountId},
+			</if>
+			<if test="ca.auditingPersonId != null">
+				auditingPersonId = #{ca.auditingPersonId},
+			</if>
+			<if test="ca.failReason != null">
+				failReason = #{ca.failReason},
+			</if>
+			<if test="ca.serialNum != null">
+				serialNum = #{ca.serialNum},
+			</if>
+			<if test="ca.batchNum != null">
+				batchNum = #{ca.batchNum},
+			</if>
+			<if test="ca.payTime != null">
+				payTime = #{ca.payTime},
+			</if>
+			<if test="ca.payPersonId != null">
+				payPersonId = #{ca.payPersonId},
+			</if>
+			<if test="ca.payPersonName != null">
+				payPersonName = #{ca.payPersonName},
+			</if>
+			updateTime = now(),
+			status = #{ca.status}
+			where
+			applicationId = #{ca.applicationId}
+		</foreach>
+	</update>
+	
+	<!-- 根据申请编号查询申请详情结果集 -->
+	<select id="getCashDetailReceiveDataSet" parameterType="String" resultMap="detailResultMap">
+		select 
+		ca.applicationId applicationId, 
+		ca.price price, 
+		ca.applicationTime applicationTime, 
+		ca.status status, 
+		a.accountType cashType 
+		from 
+		FM_CashApplication ca, 
+		SM_Account a 
+		where 
+		ca.receiveAccountId = a.accountId 
+		and 
+		applicationId = #{applicationId};
+	</select>
+	
+	<!-- 根据会员编号分页查询提现申请 -->
+	<select id="findCashByAppliPersonIdByPage" parameterType="map" resultMap="dealResultMap">
+		select 
+		ca.applicationId applicationId,
+		ca.applicationTime applicationTime, 
+		a.accountType cashMode, 
+		ca.price price, 
+		ca.status status 
+		from 
+		SM_Account a, 
+		FM_CashApplication ca 
+		where 
+		ca.receiveAccountId = a.accountId 
+		and 
+		ca.applicationPersonId = #{applicationPersonId} 
+		and 
+		ca.isValid = 1 
+		and 
+		a.isValid = 1
+		order by ca.applicationTime desc
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 根据会员编号统计处理成功的提现申请 -->
+	<select id="countCashByAppliPersonId" parameterType="int" resultType="java.lang.Integer">
+		select
+		count(applicationId)
+		from
+		<include refid="tableName" />
+		where
+		applicationPersonId = #{applicationPersonId}
+		and
+		status = 2
+		and
+		isValid = 1
+	</select>
+	
+	<!-- 代理商后台-财务管理-红包消耗 -->
+	<select id="findCashApplicationList" parameterType="map" resultMap="findResultMap">
+		select
+		   (select COUNT(DISTINCT buildingId) from PM_SalerCustomer where buildingId in ( select buildingId from BM_Building where agentId = #{userId} )) buildingNum
+		  ,(select COUNT(DISTINCT buildingId) from PM_SalerCustomer where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) buildingNumYesterday
+		  ,(select COUNT(DISTINCT userId) from PM_SalerCustomer where buildingId in ( select buildingId from BM_Building where agentId = #{userId} )) visitNum
+		  ,(select COUNT(DISTINCT userId) from PM_SalerCustomer where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) visitNumYesterday
+		  ,(select COUNT(salerCustomerId) from PM_SalerCustomer where buildingId in ( select buildingId from BM_Building where agentId = #{userId}))  visitSumNum
+		  ,(select COUNT(salerCustomerId) from PM_SalerCustomer where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and buildingId in ( select buildingId from BM_Building where agentId = #{userId}))  visitSumNumYesterday
+		  ,(select IFNULL(SUM(t1.price),0)
+					from FM_EnvelopeReceive t1
+					LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+					LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+					LEFT JOIN SM_User t5 on t4.userId = t5.userId
+					LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+					LEFT JOIN SM_Branch t7 on t7.branchId = t5.branchId
+					LEFT JOIN SM_ProvinceCity t8 on t8.areaId = t7.branchCityId
+					where  t1.envelopeType= 0 
+					and t1.status != 0
+					and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})) sumPrice
+		   ,(select IFNULL(SUM(t1.price),0)
+					from FM_EnvelopeReceive t1
+					LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+					LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+					LEFT JOIN SM_User t5 on t4.userId = t5.userId
+					LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+					LEFT JOIN SM_Branch t7 on t7.branchId = t5.branchId
+					LEFT JOIN SM_ProvinceCity t8 on t8.areaId = t7.branchCityId
+					where (TO_DAYS(NOW()) - TO_DAYS(t1.createTime) = 1) 
+				          and t1.envelopeType= 0 
+					      and t1.status != 0
+						  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})) sumPriceYesterday
+		   ,t8.areaName
+		   ,t3.nickName applicationPersonName
+		   ,t6.buildingName
+		   ,t5.name auditName
+		   ,t1.createTime updateTime
+		   ,t1.price
+		from FM_EnvelopeReceive t1
+		LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+		LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+		LEFT JOIN SM_User t5 on t4.userId = t5.userId
+        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+		LEFT JOIN SM_Branch t7 on t7.branchId = t5.branchId
+		LEFT JOIN SM_ProvinceCity t8 on t8.areaId = t7.branchCityId
+		where t1.envelopeType= 0 
+			  and t1.status != 0
+			  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+		 <if test="keyword != null">
+	        and (t8.areaName like '%${keyword}%'
+	        or t3.nickName like '%${keyword}%'
+	        or t6.buildingName like '%${keyword}%'
+	        or t5.name like '%${keyword}%')
+	     </if>
+	     <if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	     </if>
+	     <if test="isDownFlag == null">
+	     	limit #{rowstart}, #{offset}
+	     </if>
+	</select>
+	
+	<!-- 代理商后台-财务管理-红包消耗总数 -->
+	<select id="findCashApplicationDataCount" parameterType="map" resultType="Integer">
+		select 
+			COUNT(t1.receiveId)
+			from FM_EnvelopeReceive t1
+			LEFT JOIN MM_Member t3 on t3.memberId = t1.memberId
+			LEFT JOIN PM_SalerCustomer t4 on t4.memberId = t1.memberId and t4.salerCustomerId = t1.salerCustomerId
+			LEFT JOIN SM_User t5 on t4.userId = t5.userId
+	        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+			LEFT JOIN SM_Branch t7 on t7.branchId = t5.branchId
+			LEFT JOIN SM_ProvinceCity t8 on t8.areaId = t7.branchCityId
+			where t1.envelopeType= 0 
+				  and t1.status != 0
+				  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+		 <if test="keyword != null">
+	        and (t8.areaName like '%${keyword}%'
+	        or t3.nickName like '%${keyword}%'
+	        or t6.buildingName like '%${keyword}%'
+	        or t5.name like '%${keyword}%')
+	     </if>
+	     <if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	     </if>
+	</select>
+	
+	<!-- 代理商后台-财务管理-评论消耗 -->
+	<select id="findBuildingCommentCashApplicationList" parameterType="map" resultMap="findResultMap">
+		select
+		   (select COUNT(DISTINCT buildingId) from CM_BuildingComment where isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentBuildingNum
+	      ,(select COUNT(DISTINCT buildingId) from CM_BuildingComment where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentBuildingNumYesterday
+	      ,(select COUNT(DISTINCT creatorUserId) from CM_BuildingComment where isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentMemmberNum
+	      ,(select COUNT(DISTINCT creatorUserId) from CM_BuildingComment where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentMemmberNumYesterday
+		  ,(select COUNT(commentId) from CM_BuildingComment where isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentNum
+          ,(select COUNT(commentId) from CM_BuildingComment where (TO_DAYS(NOW()) - TO_DAYS(createTime) = 1) and isValid =1 and parentCommentId = 0 and buildingId in ( select buildingId from BM_Building where agentId = #{userId})) commentNumYesterday
+		  ,(select IFNULL(SUM(price),0) sumPrice from (
+				select 
+					t1.price
+					from FM_EnvelopeReceive t1
+					LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+			        LEFT JOIN SM_ProvinceCity t3 on t3.areaId = t2.cityId
+					LEFT JOIN CM_BuildingComment t4 on t4.creatorUserId = t1.memberId and t4.parentCommentId = 0 and t1.buildingId = t4.buildingId
+					LEFT JOIN SM_User t5 on t4.updateUserId = t5.userId
+			        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+				where t1.envelopeType= 1 
+					  and t1.status != 0
+					  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+			          GROUP BY t1.receiveId
+		    	) a
+		    ) as sumPrice
+		   ,(select IFNULL(SUM(price),0) sumPriceYesterday from (
+				select 
+					t1.price
+					from FM_EnvelopeReceive t1
+					LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+			        LEFT JOIN SM_ProvinceCity t3 on t3.areaId = t2.cityId
+					LEFT JOIN CM_BuildingComment t4 on t4.creatorUserId = t1.memberId and t4.parentCommentId = 0 and t1.buildingId = t4.buildingId
+					LEFT JOIN SM_User t5 on t4.updateUserId = t5.userId
+			        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+					where (TO_DAYS(NOW()) - TO_DAYS(t1.createTime) = 1) 
+				          and t1.envelopeType= 1 
+					      and t1.status != 0
+						  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+						  GROUP BY t1.receiveId
+				) a
+			) as sumPriceYesterday
+		  ,t3.areaName
+		  ,t2.nickName applicationPersonName
+		  ,t6.buildingName
+		  ,t1.createTime updateTime
+		  ,t5.name auditName
+		  ,t1.price
+		from FM_EnvelopeReceive t1
+		LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+        LEFT JOIN SM_ProvinceCity t3 on t3.areaId = t2.cityId
+		LEFT JOIN CM_BuildingComment t4 on t4.creatorUserId = t1.memberId and t4.parentCommentId = 0 and t1.buildingId = t4.buildingId
+		LEFT JOIN SM_User t5 on t4.updateUserId = t5.userId
+        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+		where t1.envelopeType= 1 
+			  and t1.status != 0
+			  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+		 <if test="keyword != null">
+	        and (t3.areaName like '%${keyword}%'
+	        or t2.nickName like '%${keyword}%'
+	        or t6.buildingName like '%${keyword}%'
+	        or t5.name like '%${keyword}%')
+	     </if>
+	     <if test="dateStart != null and dateEnd != null">
+	        and t1.createTime between #{dateStart} and #{dateEnd}
+	     </if>
+	     GROUP BY t1.receiveId
+	     <if test="isDownFlag == null">
+	     	limit #{rowstart}, #{offset}
+	     </if>
+	</select>
+	
+	<!-- 代理商后台-财务管理-评论消耗总数 -->
+	<select id="findBuildingCommentCashApplicationDataCount" parameterType="map" resultType="Integer">
+		select 
+			COUNT(*) from (
+			select 
+				COUNT(*)
+				from FM_EnvelopeReceive t1
+				LEFT JOIN MM_Member t2 on t2.memberId = t1.memberId
+		        LEFT JOIN SM_ProvinceCity t3 on t3.areaId = t2.cityId
+				LEFT JOIN CM_BuildingComment t4 on t4.creatorUserId = t1.memberId and t4.parentCommentId = 0 and t1.buildingId = t4.buildingId
+				LEFT JOIN SM_User t5 on t4.updateUserId = t5.userId
+		        LEFT JOIN BM_Building t6 on t1.buildingId = t6.buildingId
+			where t1.envelopeType= 1 
+				  and t1.status != 0
+				  and t1.buildingId IN (select buildingId from BM_Building where agentId = #{userId})
+			 <if test="keyword != null">
+		        and (t3.areaName like '%${keyword}%'
+		        or t2.nickName like '%${keyword}%'
+		        or t6.buildingName like '%${keyword}%'
+		        or t5.name like '%${keyword}%')
+		     </if>
+		     <if test="dateStart != null and dateEnd != null">
+		        and t1.createTime between #{dateStart} and #{dateEnd}
+		     </if>
+		     GROUP BY t1.receiveId
+		  ) a
+	</select>
+	
+	<!-- 根据代理商编号分页查询提现申请记录 -->
+	<select id="findCashDateSet" parameterType="com.jzhl.kfsq.dto.fm.CashParamDto" resultMap="cashResultMap">
+		SELECT ca.applicationId applicationId, m.nickName nickName, m.account account, 
+				DATE_FORMAT(ca.applicationTime,'%Y-%m-%d %H:%i') applicationTime, 
+				a.accountType accountType, ca.price price, 
+				IFNULL(
+					(
+						SELECT
+							SUM(e.price)
+						FROM
+							FM_EnvelopeReceive e
+						WHERE
+							e.memberId = m.memberId
+						AND e. STATUS != 0
+						AND e.isValid = 1
+					),
+					0
+				) - IFNULL(
+					(
+						SELECT
+							SUM(c.price)
+						FROM
+							FM_CashApplication c
+						WHERE
+							c.applicationPersonId = m.memberId
+						<![CDATA[ AND  c.applicationTime <= ca.applicationTime ]]>
+						AND c. STATUS = 2
+						AND c.isValid = 1
+					),
+					0
+				) AS balance,
+				ca.status status
+		FROM FM_CashApplication ca, MM_Member m, SM_Account a, SM_User u, SM_Branch b, FM_EnvelopeReceive er 
+		WHERE ca.applicationPersonId = m.memberId 
+		AND a.accountId = ca.receiveAccountId 
+		AND u.branchId = b.branchId 
+		AND b.branchCityId = m.cityId
+		AND er.memberId = m.memberId 
+		AND u.userId = #{userId}
+		<if test="status != null">
+			AND ca.status = #{status}
+		</if>
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ AND DATE_FORMAT(ca.applicationTime, '%Y-%m-%d') >= DATE_FORMAT(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ AND DATE_FORMAT(ca.applicationTime, '%Y-%m-%d') <= DATE_FORMAT(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+		GROUP BY ca.applicationId
+		ORDER BY ca.applicationTime DESC
+		<if test="isDownFlag == null">
+		     LIMIT #{rowStart}, #{offset}
+	    </if>
+	</select>
+	
+	<!-- 根据代理商编号统计提现申请数据量 -->
+	<select id="countCashDataSet" parameterType="com.jzhl.kfsq.dto.fm.CashParamDto" resultType="Integer">
+		SELECT COUNT(a.applicationId) FROM
+		(SELECT ca.applicationId applicationId, m.nickName nickName, m.account account, 
+				DATE_FORMAT(ca.applicationTime,'%Y-%m-%d %H:%i') applicationTime, 
+				a.accountType accountType, ca.price price, 
+				IFNULL(
+					(
+						SELECT
+							SUM(e.price)
+						FROM
+							FM_EnvelopeReceive e
+						WHERE
+							e.memberId = m.memberId
+						AND e. STATUS != 0
+						AND e.isValid = 1
+					),
+					0
+				) - IFNULL(
+					(
+						SELECT
+							SUM(c.price)
+						FROM
+							FM_CashApplication c
+						WHERE
+							c.applicationPersonId = m.memberId
+						<![CDATA[ AND  c.applicationTime <= ca.applicationTime ]]>
+						AND c. STATUS = 2
+						AND c.isValid = 1
+					),
+					0
+				) AS balance,
+				ca.status status
+		FROM FM_CashApplication ca, MM_Member m, SM_Account a, SM_User u, SM_Branch b, FM_EnvelopeReceive er 
+		WHERE ca.applicationPersonId = m.memberId 
+		AND a.accountId = ca.receiveAccountId 
+		AND u.branchId = b.branchId 
+		AND b.branchCityId = m.cityId
+		AND er.memberId = m.memberId 
+		AND u.userId = #{userId}
+		<if test="status != null">
+			AND ca.status = #{status}
+		</if>
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ AND DATE_FORMAT(ca.applicationTime, '%Y-%m-%d') >= DATE_FORMAT(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ AND DATE_FORMAT(ca.applicationTime, '%Y-%m-%d') <= DATE_FORMAT(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+		GROUP BY ca.applicationId) AS a
+	</select>
+	
+	<!-- 根据申请编号查询待处理的申请 -->
+	<select id="findCashByCashIdAndStatus" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />
+		FROM <include refid="tableName" />
+		WHERE status = 0
+		AND
+		applicationId IN
+		<foreach collection="array" item="applicationId" index="index" open="(" separator="," close=")">
+			 #{applicationId}
+		</foreach>
+	</select>
+	
+</mapper>

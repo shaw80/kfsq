@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingFeatureDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dto.bm.BuildingFeatureDto" id="baseResultMap">
+		<result property="featureId" column="featureId" />
+		<result property="featureName" column="featureName" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.bm.BuildingFeatureMsgDataSet" id="buildingFeatureResultMap">
+		<id property="id" column="id" />
+		<result property="featureId" column="featureId" />
+		<result property="featureName" column="featureName" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		smf.featureId as featureId, 
+		smf.featureName as featureName
+	</sql>
+	
+	<select id="findBuildingFeatureDto" parameterType="com.jzhl.kfsq.dto.bm.BuildingFeatureDto" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from SM_Feature smf
+		where smf.isValid = 1
+		and smf.featureId in(
+			select bmbf.featureId from BM_BuildingFeature bmbf
+			where bmbf.isValid = 1 
+			<if test="buildingId != null">
+				and bmbf.buildingId = #{buildingId}
+			</if>
+			<if test="cityId != null and cityId != 0">
+			and bmbf.buildingId in (
+				select bmb.buildingId from BM_Building bmb, SM_Area sma 
+				where bmb.county = sma.areaId
+				and bmb.isValid = 1 
+				and sma.isValid = 1
+				and sma.cityId=#{cityId}
+			)
+			</if>
+		)
+	</select>
+	
+	<select id="findBuildingFeatureMsgDataSet" parameterType="Integer" resultMap="buildingFeatureResultMap">
+		SELECT
+			bmbf.id as id,
+			smf.featureId AS featureId,
+			smf.featureName AS featureName	
+		FROM
+			SM_Feature smf, BM_BuildingFeature bmbf
+		WHERE
+			smf.isValid = 1
+		AND
+			bmbf.isValid = 1
+		AND 
+			smf.featureId = bmbf.featureId
+		AND 
+			bmbf.buildingId = #{buildingId}
+	</select>
+	
+</mapper>

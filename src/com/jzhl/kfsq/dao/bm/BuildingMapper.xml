@@ -1,0 +1,820 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingMapper">
+
+	<resultMap id="bmBuildingResultMap" type="com.jzhl.kfsq.entity.bm.Building">
+		<id property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="agentId" column="agentId" />
+		<result property="developer" column="developer" />
+		<result property="property" column="property" />
+		<result property="decorationSituation" column="decorationSituation" />
+		<result property="phone" column="phone" />
+		<result property="averagePrice" column="averagePrice" />
+		<result property="sectionMin" column="sectionMin" />
+		<result property="sectionMax" column="sectionMax" />
+		<result property="address" column="address" />
+		<result property="position" column="position" />
+		<result property="county" column="county" />
+		<result property="longitude" column="longitude" />
+		<result property="latitude" column="latitude" />
+		<result property="surrounding" column="surrounding" />
+		<result property="buildingInfo" column="buildingInfo" />
+		<result property="banner" column="banner" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+		<result property="buildingNo" column="buildingNo" />
+	</resultMap>
+	<resultMap id="pageResultMap" type="java.util.HashMap" extends="bmBuildingResultMap"></resultMap>
+	<resultMap id="findResultMap" type="java.util.HashMap" extends="bmBuildingResultMap"></resultMap>
+
+	<insert id="insert" parameterType="com.jzhl.kfsq.entity.bm.Building" useGeneratedKeys="true" keyProperty="buildingId">
+		insert into BM_Building (
+		buildingName,
+		<if test="buildingNo != null">
+			buildingNo,
+		</if>
+		agentId,
+		developer,
+		property,
+		decorationSituation,
+		phone,
+		averagePrice,
+		sectionMin,
+		sectionMax,
+		address,
+		position,
+		county,
+		secondAreaId,
+		longitude,
+		latitude,
+		surrounding,
+		buildingInfo,
+		banner,
+		salesType,
+		buildingType,
+		goodsType,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+		)values (
+		#{buildingName},
+		<if test="buildingNo != null">
+			#{buildingNo},
+		</if>
+		#{agentId},
+		#{developer},
+		#{property},
+		#{decorationSituation},
+		#{phone},
+		#{averagePrice},
+		#{sectionMin},
+		#{sectionMax},
+		#{address},
+		#{position},
+		#{county},
+		#{secondAreaId},
+		#{longitude},
+		#{latitude},
+		#{surrounding},
+		#{buildingInfo},
+		#{banner},
+		#{salesType},
+		#{buildingType},
+		#{goodsType},
+		#{creatorUserId},
+		now(),
+		#{updateUserId},
+		#{updateTime},
+		#{isValid}
+		)
+	</insert>
+
+	<update id="update" parameterType="com.jzhl.kfsq.entity.bm.Building">
+		update BM_Building set 
+		buildingName=#{buildingName},
+		agentId=#{agentId},
+		developer=#{developer},
+		phone=#{phone},
+		averagePrice=#{averagePrice},
+		sectionMin=#{sectionMin},
+		sectionMax=#{sectionMax},
+		address=#{address},
+		position=#{position},
+		county=#{county},
+		<if test="isSynchronous == null or isSynchronous ==0">
+			longitude=#{longitude},
+			latitude=#{latitude},
+		</if>
+		surrounding=#{surrounding},
+		buildingInfo=#{buildingInfo},
+		banner=#{banner},
+		updateUserId=#{updateUserId},
+		updateTime=now(),
+		isValid=#{isValid}
+		where
+		buildingId=#{buildingId}
+	</update>
+	
+	<update id="inVaild" parameterType="com.jzhl.kfsq.entity.bm.Building">
+		update BM_Building set 
+		updateUserId=#{updateUserId},
+		updateTime=now(),
+		isValid=0
+		where
+		buildingId=#{buildingId}
+	</update>
+
+	<delete id="delete" parameterType="map">
+		delete from
+		BM_Building
+		where
+		buildingId=#{buildingId}
+	</delete>
+
+
+	<select id="find" parameterType="map" resultMap="findResultMap">
+		select
+		buildingId,
+		buildingName,
+		agentId,
+		developer,
+		phone,
+		averagePrice,
+		sectionMin,
+		sectionMax,
+		address,
+		position,
+		county,
+		longitude,
+		latitude,
+		surrounding,
+		buildingInfo,
+		banner,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid,
+		buildingNo
+		from BM_Building
+		<where>
+			<if test="buildingId != null">
+				buildingId=#{buildingId}
+			</if>
+			<if test="buildingName != null">
+				and buildingName=#{buildingName}
+			</if>
+			<if test="agentId != null">
+				and agentId=#{agentId}
+			</if>
+			<if test="developer != null">
+				and developer=#{developer}
+			</if>
+			<if test="phone != null">
+				and phone=#{phone}
+			</if>
+			<if test="averagePrice != null">
+				and averagePrice=#{averagePrice}
+			</if>
+			<if test="sectionMin != null">
+				and sectionMin=#{sectionMin}
+			</if>
+			<if test="sectionMax != null">
+				and sectionMax=#{sectionMax}
+			</if>
+			<if test="address != null">
+				and address=#{address}
+			</if>
+			<if test="position != null">
+				and position=#{position}
+			</if>
+			<if test="county != null">
+				and county=#{county}
+			</if>
+			<if test="longitude != null">
+				and longitude=#{longitude}
+			</if>
+			<if test="latitude != null">
+				and latitude=#{latitude}
+			</if>
+			<if test="surrounding != null">
+				and surrounding=#{surrounding}
+			</if>
+			<if test="buildingInfo != null">
+				and buildingInfo=#{buildingInfo}
+			</if>
+			<if test="banner != null">
+				and banner=#{banner}
+			</if>
+			<if test="creatorUserId != null">
+				and creatorUserId=#{creatorUserId}
+			</if>
+			<if test="createTime != null">
+				and createTime=#{createTime}
+			</if>
+			<if test="updateUserId != null">
+				and updateUserId=#{updateUserId}
+			</if>
+			<if test="updateTime != null">
+				and updateTime=#{updateTime}
+			</if>
+			<if test="isValid != null">
+				and isValid=#{isValid}
+			</if>
+			<if test="buildingNo != null">
+				and buildingNo=#{buildingNo}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 根据代理商userid查询其下销售总监列表-->
+	<select id="findBuildingUserList" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.BuildingDataSet">
+		select t1.*,t2.buildingName,t3.userId, t3.account,t3.name,t3.createTime userCreateTime,t3.isValid userIsValid
+		 from SM_UserBuilding t1 
+		LEFT JOIN BM_Building t2 on t1.buildingId=t2.buildingId
+		LEFT JOIN SM_User t3 on t1.userId=t3.userId
+		where t3.appUserType=0 and t1.userId in  (select userId from SM_User where leaderUserId=#{userId}) 
+			<if test="isValid != null">
+				and t3.isValid=#{isValid}
+			</if>
+			<if test="buildingId != null">
+				and t2.buildingId=#{buildingId}
+			</if>
+			<if test="keyword != null">
+				and (t3.name like '%${keyword}%'
+				or t3.account like '%${keyword}%'
+				or t2.buildingName like '%${keyword}%')
+			</if>
+			ORDER BY t3.createTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 根据代理商userid查询其下销售总监列表总数 -->
+	<select id="getBuildingDataCount" parameterType="map" resultType="Integer">
+		select count(t1.userBuildingId)
+		 from SM_UserBuilding t1 
+		LEFT JOIN BM_Building t2 on t1.buildingId=t2.buildingId
+		LEFT JOIN SM_User t3 on t1.userId=t3.userId
+		where t3.appUserType=0 and t1.userId in  (select userId from SM_User where leaderUserId=#{userId}) 
+			<if test="isValid != null">
+				and t3.isValid=#{isValid}
+			</if>
+			<if test="buildingId != null">
+				and t2.buildingId=#{buildingId}
+			</if>
+			<if test="keyword != null">
+				and (t3.name like '%${keyword}%'
+				or t3.account like '%${keyword}%'
+				or t2.buildingName like '%${keyword}%')
+			</if>
+	</select>
+	
+	<!-- 根据代理商userid查询其下楼盘总数与列表-->
+	<select id="findBuildingList" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.BuildingDataSet">
+		select * from BM_Building where isValid =1 
+		<if test="userId != null">
+			and agentId = #{userId}
+		</if>
+		<if test="buildingName != null">
+			and buildingName like '%${buildingName}%'
+		</if>
+	</select>
+	
+	<!-- 根据代理商userid查询其下楼盘总数与列表-->
+	<select id="findNewBuildingList" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.BuildingDataSet">
+		select * from BM_Building where isValid =1 and agentId = #{userId} and buildingId not in 
+		(select t1.buildingId
+				 from SM_UserBuilding t1 
+				LEFT JOIN BM_Building t2 on t1.buildingId=t2.buildingId
+				LEFT JOIN SM_User t3 on t1.userId=t3.userId
+				where t3.appUserType=0 and t1.userId in (select userId from SM_User where leaderUserId = #{userId}))
+	</select>
+	
+	<!-- 根据楼盘信息和代理商id查询楼盘列表 -->
+	<select id="findMsgBuildingList" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.BuildingMsgDataSet">
+	   SELECT * FROM   
+	    (
+	      select DISTINCT b.*,
+	      (SELECT areaName from SM_Area where areaId=b.county) as countyName,
+	      (SELECT areaName from SM_Area where areaId=b.secondAreaId) as secondAreaName,
+	      (SELECT COUNT(*) from BM_BuildingFeature where buildingId=b.buildingId) as featureNumber,
+	      t3.scancodePrice as price,t3.ruleId as ruleId,
+	      t3.isValid  as priceisValid, t2.buildingId as envelopeId,
+	      bcq.greenRates,
+		  bcq.greenImg,
+	      bcq.ratioOfSpaces,
+	      bcq.spaceOfCarImg,
+	      bcq.parkFacilitiesImg,
+	      bcq.IsSeparation,
+          (SELECT COUNT(*) from BM_BuildingTag where buildingId=b.buildingId and isShow != 0 and isValid =1) as tagIsShowNum
+	      from BM_Building b 
+	      		LEFT JOIN FM_EnvelopeRecharge t2 on b.buildingId = t2.buildingId
+	            LEFT JOIN SM_EnvelopeRule t3 on b.buildingId = t3.buildingId
+	            LEFT JOIN BM_CommunityQuality bcq on bcq.buildingId = b.buildingId
+	      where   
+	      b.agentId=(SELECT
+						userId
+					FROM
+						SM_User u1,
+						SM_Role r
+					WHERE
+						(
+							SELECT
+								u2.branchId
+							FROM
+								SM_User u2
+							WHERE
+								u2.userId = #{agentId}
+						) = u1.branchId
+					AND u1.roleId = r.roleId
+					AND r.roleCode = 'agent'
+					AND r.roleType = '0'
+					)
+			<if test="county != null">
+				and b.county = #{county}
+			</if>
+			<if test="featureId != null">
+				and b.buildingId IN (SELECT DISTINCT(buildingId) from BM_BuildingFeature 
+				where featureId=#{featureId})
+			</if>
+			<if test="isValid != null">
+				and b.isValid = #{isValid}
+			</if>
+			<if test="priceisValid != null and priceisValid == 1">
+				and t3.isValid = #{priceisValid}
+			</if>
+			<if test="priceisValid != null and priceisValid == 0">
+				and t3.isValid = #{priceisValid} or t3.isValid is null
+			</if>
+			 <if test="minPrice != null">
+				and <![CDATA[b.averagePrice >= #{minPrice}]]>
+			</if>
+			<if test="maxPrice != null">
+				and <![CDATA[b.averagePrice <= #{maxPrice}]]>
+			</if>
+		    <if test="buildingName != null">
+		       and  (b.buildingName like '%${buildingName}%' or b.position like '%${buildingName}%')
+		    </if>
+		    <if test="rechargeFlag == 0">
+		       and  t2.buildingId is not null
+		    </if>
+		    <if test="rechargeFlag == 1">
+		       and  t2.buildingId is null
+		    </if>
+		    <if test="secondAreaId != null">
+		       and b.secondAreaId = #{secondAreaId}
+		    </if>
+		    <if test="decorationSituation != null">
+		       and b.decorationSituation = #{decorationSituation}
+		    </if>
+		    <if test="greenRates != null and greenRates == 0">
+		       and bcq.greenRates is null
+		    </if>
+		    <if test="greenRates != null and greenRates == 1">
+		       and bcq.greenRates is not null
+		    </if>
+		    <if test="greenImg != null and greenImg == 0">
+		       and bcq.greenImg is null
+		    </if>
+		    <if test="greenImg != null and greenImg == 1">
+		       and bcq.greenImg is not null
+		    </if>
+		    <if test="ratioOfSpaces != null and ratioOfSpaces == 0">
+		       and bcq.ratioOfSpaces is null
+		    </if>
+		    <if test="ratioOfSpaces != null and ratioOfSpaces == 1">
+		       and bcq.ratioOfSpaces is not null
+		    </if>
+		    <if test="spaceOfCarImg != null and spaceOfCarImg == 0">
+		       and bcq.spaceOfCarImg is null
+		    </if>
+		    <if test="spaceOfCarImg != null and spaceOfCarImg == 1">
+		       and bcq.spaceOfCarImg is not null
+		    </if>
+		    <if test="parkFacilitiesImg != null and parkFacilitiesImg == 0">
+		       and bcq.parkFacilitiesImg is null
+		    </if>
+		    <if test="parkFacilitiesImg != null and parkFacilitiesImg == 1">
+		       and bcq.parkFacilitiesImg is not null
+		    </if>
+		    <if test="IsSeparation != null">
+		       and bcq.IsSeparation = #{IsSeparation}
+		    </if>
+		    order by t2.buildingId desc, t3.scancodePrice desc, b.createTime desc
+		  ) a
+		<if test="tagIsShowNum != null">
+			WHERE tagIsShowNum = #{tagIsShowNum}
+		</if>
+		limit #{rowStart}, #{offset}
+	 </select>
+ 	<!-- 分页查询文章列表总页数 -->
+	<select id="findMsgBuildingListCount" parameterType="map" resultType="Integer">
+      SELECT count(buildingId) FROM   
+	    (
+	      select 
+	      DISTINCT(b.buildingId),
+	      (SELECT COUNT(*) from BM_BuildingTag where buildingId=b.buildingId and isShow != 0 and isValid =1) as tagIsShowNum
+	      from BM_Building b 
+	      		LEFT JOIN FM_EnvelopeRecharge t2 on b.buildingId = t2.buildingId
+	            LEFT JOIN SM_EnvelopeRule t3 on b.buildingId = t3.buildingId
+	            LEFT JOIN BM_CommunityQuality bcq on bcq.buildingId = b.buildingId
+	      where   
+	      b.agentId=(SELECT
+							userId
+						FROM
+							SM_User u1,
+							SM_Role r
+						WHERE
+							(
+								SELECT
+									u2.branchId
+								FROM
+									SM_User u2
+								WHERE
+									u2.userId = #{agentId}
+							) = u1.branchId
+						AND u1.roleId = r.roleId
+						AND r.roleCode = 'agent'
+						AND r.roleType = '0'
+						)
+				<if test="county != null">
+					and b.county = #{county}
+				</if>
+				<if test="featureId != null">
+					and b.buildingId IN (SELECT DISTINCT(buildingId) from BM_BuildingFeature 
+					where featureId=#{featureId})
+				</if>
+				<if test="isValid != null">
+					and b.isValid = #{isValid}
+				</if>
+				<if test="priceisValid != null and priceisValid == 1">
+					and t3.isValid = #{priceisValid}
+				</if>
+				<if test="priceisValid != null and priceisValid == 0">
+					and t3.isValid = #{priceisValid} or t3.isValid is null
+				</if>
+				<if test="minPrice != null">
+					and <![CDATA[b.averagePrice >= #{minPrice}]]>
+				</if>
+				<if test="maxPrice != null">
+					and <![CDATA[b.averagePrice <= #{maxPrice}]]>
+				</if>
+			    <if test="buildingName != null">
+			       and  (b.buildingName like '%${buildingName}%' or b.position like '%${buildingName}%')
+			    </if>
+			    <if test="rechargeFlag == 0">
+			       and  t2.buildingId is not null
+			    </if>
+			    <if test="rechargeFlag == 1">
+			       and  t2.buildingId is null
+			    </if>
+			     <if test="secondAreaId != null">
+			       and b.secondAreaId = #{secondAreaId}
+			    </if>
+			    <if test="decorationSituation != null">
+			       and b.decorationSituation = #{decorationSituation}
+			    </if>
+			    <if test="greenRates != null and greenRates == 0">
+			       and bcq.greenRates is null
+			    </if>
+			    <if test="greenRates != null and greenRates == 1">
+			       and bcq.greenRates is not null
+			    </if>
+			    <if test="greenImg != null and greenImg == 0">
+			       and bcq.greenImg is null
+			    </if>
+			    <if test="greenImg != null and greenImg == 1">
+			       and bcq.greenImg is not null
+			    </if>
+			    <if test="ratioOfSpaces != null and ratioOfSpaces == 0">
+			       and bcq.ratioOfSpaces is null
+			    </if>
+			    <if test="ratioOfSpaces != null and ratioOfSpaces == 1">
+			       and bcq.ratioOfSpaces is not null
+			    </if>
+			    <if test="spaceOfCarImg != null and spaceOfCarImg == 0">
+			       and bcq.spaceOfCarImg is null
+			    </if>
+			    <if test="spaceOfCarImg != null and spaceOfCarImg == 1">
+			       and bcq.spaceOfCarImg is not null
+			    </if>
+			    <if test="parkFacilitiesImg != null and parkFacilitiesImg == 0">
+			       and bcq.parkFacilitiesImg is null
+			    </if>
+			    <if test="parkFacilitiesImg != null and parkFacilitiesImg == 1">
+			       and bcq.parkFacilitiesImg is not null
+			    </if>
+			    <if test="IsSeparation != null">
+			       and bcq.IsSeparation = #{IsSeparation}
+			    </if>
+		  ) a
+		<if test="tagIsShowNum != null">
+			WHERE tagIsShowNum = #{tagIsShowNum}
+		</if>
+	</select>
+	<!-- 查看楼盘详情 -->
+	<select id="getBuildingMsg" parameterType="com.jzhl.kfsq.entity.bm.Building" resultType="com.jzhl.kfsq.dataset.bm.BuildingMsgDataSet">
+		select bbd.*,
+			(SELECT areaName from SM_Area where areaId=bbd.secondAreaId) as secondAreaName,
+			bcq.greenRates,
+			bcq.greenImg,
+			bcq.ratioOfSpaces,
+			bcq.spaceOfCarImg,
+			bcq.parkFacilitiesImg,
+			bcq.IsSeparation,
+			bbec.traffic,
+			bbec.arround,
+			bbec.discount,
+			bbec.education
+		from BM_Building bbd 
+			LEFT JOIN BM_CommunityQuality bcq on bcq.buildingId = bbd.buildingId
+			LEFT JOIN BM_BuildingExtendContent bbec on bbec.buildingId = bbd.buildingId
+		where  
+			bbd.buildingId=#{buildingId}
+	</select>
+	
+	<update id="updateBuildingMsg" parameterType="com.jzhl.kfsq.entity.bm.Building">
+	   update BM_Building set updateTime = now()
+	  		<if test="county != null">
+				,county=#{county}
+			</if>
+			<if test="secondAreaId != null">
+				,secondAreaId=#{secondAreaId}
+			</if>
+			<if test="banner != null">
+				,banner=#{banner}
+			</if>
+			<if test="salesType != null">
+				,salesType=#{salesType}
+			</if>
+			<if test="buildingType != null">
+				,buildingType=#{buildingType}
+			</if>
+			<if test="goodsType != null">
+				,goodsType=#{goodsType}
+			</if>
+			<if test="buildingName != null">
+				,buildingName=#{buildingName}
+			</if>
+			<if test="buildingInfo != null">
+				,buildingInfo=#{buildingInfo}
+			</if>
+			<if test="developer != null">
+				,developer=#{developer}
+			</if>
+			<if test="property != null">
+				,property=#{property}
+			</if>
+			<if test="decorationSituation != null">
+				,decorationSituation=#{decorationSituation}
+			</if>
+			<if test="phone != null">
+				,phone=#{phone}
+			</if>
+			<if test="address != null">
+				,address=#{address}
+			</if>
+			<if test="longitude != null">
+				,longitude=#{longitude}
+			</if>
+			<if test="latitude != null">
+				,latitude=#{latitude}
+			</if>
+			<if test="averagePrice != null">
+				,averagePrice=#{averagePrice}
+			</if>
+			<if test="position != null">
+				,position=#{position}
+			</if>
+			<if test="surrounding != null">
+				,surrounding=#{surrounding}
+			</if>
+			<if test="sectionMin != null">
+				,sectionMin=#{sectionMin}
+			</if>
+			<if test="sectionMax != null">
+				,sectionMax=#{sectionMax}
+			</if>
+           where
+		   buildingId=#{buildingId}
+	</update>
+	
+	<!-- 根据营销总监userId查询buildingInfo信息-->
+	<select id="getBuildingInfo" parameterType="Int" resultType="com.jzhl.kfsq.dataset.bm.BuildingInfo">
+		SELECT
+		buildingName,
+		(
+			SELECT
+				ifnull(
+					(
+						SELECT
+							sum(fmer.totalSum)
+						FROM
+							FM_EnvelopeRecharge fmer
+						WHERE
+							fmer.isValid = 1
+						AND fmer.buildingId = (
+							SELECT
+								smub.buildingId
+							FROM
+								SM_UserBuilding smub
+							WHERE
+								smub.userId = #{userId}
+						)
+					),
+					0
+				) - ifnull(
+					(
+						SELECT
+							sum(fmra.price)
+						FROM
+							FM_RedemptionApplication fmra
+						WHERE
+							fmra.isValid = 1
+						AND fmra. STATUS = 2
+						AND fmra.buildingId = (
+							SELECT
+								smub.buildingId
+							FROM
+								SM_UserBuilding smub
+							WHERE
+								smub.userId = #{userId}
+						)
+					),
+					0
+				) - ifnull(
+					(
+						SELECT
+							SUM(price)
+						FROM
+							FM_EnvelopeReceive
+						WHERE
+							buildingId = (
+								SELECT
+									buildingId
+								FROM
+									SM_UserBuilding
+								WHERE
+									userId = #{userId}
+								AND STATUS = 1
+							)
+						AND envelopeType = 0
+					),
+					0
+				)
+		) AS balance
+	FROM
+		BM_Building
+	WHERE
+		buildingId = (
+			SELECT
+				buildingId
+			FROM
+				SM_UserBuilding
+			WHERE
+				userId = #{userId}
+		)
+	AND isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号查询楼盘-->
+	<select id="getBuildingByBuildingId" parameterType="int" resultType="com.jzhl.kfsq.entity.bm.Building">
+		SELECT
+			*
+		FROM
+			BM_Building
+		WHERE
+			buildingId = #{buildingId}
+	</select>
+	
+	<!-- 同地段的4个推荐楼盘-->
+	<select id="findRecommendBuildingsV3DataSetByArea" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.RecommendBuildingsV3DataSet">
+		SELECT
+			b.buildingId,
+			b.buildingName,
+			b.banner,
+			b.address,
+			(
+				CASE b.averagePrice
+				WHEN 0 THEN
+					''
+				ELSE
+					b.averagePrice
+				END
+			) averagePrice,
+			IFNULL(babs.totalScore, 0) totalScore
+		FROM
+			BM_Building a,
+			BM_Building b
+		LEFT JOIN BA_BuildingScore babs ON b.buildingId = babs.buildingId
+		WHERE
+			a.buildingId = #{buildingId}
+		AND a.isValid = 1
+		AND a.secondAreaId = b.secondAreaId
+		AND b.buildingId != #{buildingId}
+		AND b.latitude != ''
+		AND b.longitude != ''
+		AND b.latitude IS NOT NULL
+		AND b.longitude IS NOT NULL
+		AND b.isValid = 1
+		LIMIT 0,
+		 4
+	</select>
+	
+	<!-- 同价格的4个推荐楼盘-->
+	<select id="findRecommendBuildingsV3DataSetByPrice" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.RecommendBuildingsV3DataSet">
+		SELECT
+			bmb.buildingId buildingId,
+			bmb.buildingName buildingName,
+			bmb.averagePrice averagePrice,
+			bmb.banner banner,
+			bmb.address address,
+			IFNULL(babs.totalScore, 0) totalScore
+		FROM
+			SM_PriceInfo smpi,
+			BM_Building bmb
+		LEFT JOIN BA_BuildingScore babs ON bmb.buildingId = babs.buildingId
+		WHERE
+			<![CDATA[smpi.minPrice <= (
+				SELECT
+					averagePrice
+				FROM
+					BM_Building
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+			)]]>
+		AND <![CDATA[smpi.maxPrice >= (
+			SELECT
+				averagePrice
+			FROM
+				BM_Building
+			WHERE
+				buildingId = #{buildingId}
+			AND isValid = 1
+		)]]>
+		AND <![CDATA[bmb.averagePrice >= smpi.minPrice]]>
+		AND <![CDATA[bmb.averagePrice <= smpi.maxPrice]]>
+		AND bmb.buildingId != #{buildingId}
+		AND bmb.latitude != ''
+		AND bmb.longitude != ''
+		AND bmb.latitude IS NOT NULL
+		AND bmb.longitude IS NOT NULL
+		AND bmb.isValid = 1
+		LIMIT 0, 4
+	</select>
+	
+	<!-- 同特色的4个推荐楼盘-->
+	<select id="findRecommendBuildingsV3DataSetByTag" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.RecommendBuildingsV3DataSet">
+		SELECT
+			c.buildingId buildingId,
+			c.buildingName buildingName,
+			c.averagePrice averagePrice,
+			c.banner banner,
+			c.address address,
+			IFNULL(babs.totalScore, 0) totalScore
+		FROM
+			BM_Building bmb,
+			BM_BuildingTag bmbt,
+			BM_BuildingTag b,
+			BM_Building c
+		LEFT JOIN BA_BuildingScore babs ON c.buildingId = babs.buildingId
+		WHERE
+			bmb.buildingId = #{buildingId}
+		AND bmb.isValid = 1
+		AND bmbt.buildingId = bmb.buildingId
+		AND bmbt.isShow = 1
+		AND bmbt.isValid = 1
+		AND bmbt.tagId = b.tagId
+		AND b.buildingId != #{buildingId}
+		AND c.buildingId = b.buildingId
+		AND c.latitude != ''
+		AND c.longitude != ''
+		AND c.latitude IS NOT NULL
+		AND c.longitude IS NOT NULL
+		GROUP BY
+			c.buildingId
+		LIMIT 0, 4
+	</select>
+	
+	<!-- 根据分站编号查询楼盘-->
+	<select id="findBuildingByBranchId" parameterType="int" resultType="com.jzhl.kfsq.entity.bm.Building">
+		SELECT
+			*
+		FROM
+			BM_Building bmb,
+			SM_User smu
+		WHERE
+			bmb.agentId = smu.userId
+		AND smu.branchId = #{branchId}
+	</select>
+	
+</mapper> 

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.em.IEncyclopediaClassesMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.em.EncyclopediaClasses" id="baseResultMap">
+		<id property="classId" column="classId" />
+		<result property="parentId" column="parentId" />
+		<result property="className" column="className" />
+		<result property="joinUpdateCount" column="joinUpdateCount" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+		<result property="icon" column="icon" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		classId,
+		parentId,
+		className,
+		joinUpdateCount,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid,
+		icon,
+		serialNum
+	</sql>
+	
+	<!-- 新增菜单 -->
+	<insert id="insertEncyclopediaClassMenu" parameterType="com.jzhl.kfsq.entity.em.EncyclopediaClasses">
+		insert into EM_EncyclopediaClass
+		(
+			createTime
+			<if test="parentId != null">
+				,parentId
+			</if>
+			<if test="className != null">
+				,className
+			</if>
+			<if test="joinUpdateCount != null">
+				,joinUpdateCount
+			</if>
+			<if test="creatorUserId != null">
+				,creatorUserId
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId
+			</if>
+			<if test="updateTime != null">
+				,updateTime
+			</if>
+			,isValid
+			<if test="icon != null">
+				,icon
+			</if>
+			,serialNum
+		)
+		values
+		(
+			now()
+			<if test="parentId != null">
+				,#{parentId}
+			</if>
+			<if test="className != null">
+				,#{className}
+			</if>
+			<if test="joinUpdateCount != null">
+				,#{joinUpdateCount}
+			</if>
+			<if test="creatorUserId != null">
+				,#{creatorUserId}
+			</if>
+			<if test="updateUserId != null">
+				,#{updateUserId}
+			</if>
+			<if test="updateTime != null">
+				,#{updateTime}
+			</if>
+			,1
+			<if test="icon != null">
+				,#{icon}
+			</if>
+			,0
+		)
+	</insert>
+	
+	<!-- 编辑二级菜单 -->
+	<update id="updateEncyclopediaClassMenu" parameterType="com.jzhl.kfsq.entity.em.EncyclopediaClasses">
+		update EM_EncyclopediaClass set
+			updateTime = now()
+			<if test="className != null and className != ''">
+				,className = #{className}
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId = #{updateUserId}
+			</if>
+			<if test="isValid != null">
+				,isValid = #{isValid}
+			</if>
+			<if test="icon != null">
+				,icon = #{icon}
+			</if>
+		where 
+			classId = #{classId}
+	</update>
+	
+	<select id="findEncyclopediaClasses" parameterType="com.jzhl.kfsq.entity.em.EncyclopediaClasses" resultType="com.jzhl.kfsq.entity.em.EncyclopediaClasses">
+		select *
+		from EM_EncyclopediaClass
+		<where>
+			<if test="isValid != null">
+				isValid = #{isValid}
+			</if>
+			<if test="parentId != null">
+				and parentId = #{parentId}
+			</if>
+		</where> 
+		order by serialNum
+	</select>
+</mapper>

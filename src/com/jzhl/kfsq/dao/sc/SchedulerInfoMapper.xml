@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sc.ISchedulerInfoMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sc.SchedulerInfo" id="baseResultMap">
+		<id property="schedulerId" column="schedulerId" />
+		<result property="schedulerName" column="schedulerName" />
+		<result property="className" column="className" />
+		<result property="timeInterval" column="timeInterval" />
+		<result property="lastExecuteTime" column="lastExecuteTime" />
+		<result property="finishExecuteTime" column="finishExecuteTime" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+
+	<sql id="baseColumns">
+		schedulerId,
+		schedulerName,
+		className,
+		timeInterval,
+		lastExecuteTime,
+		finishExecuteTime,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+	</sql>
+
+	<sql id="tableName">
+		SC_SchedulerInfo
+	</sql>
+
+	<select id="findSchedulerInfoToDo" parameterType="com.jzhl.kfsq.dto.sc.SchedulerDto" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where 
+		isValid = 1
+		and
+		finishExecuteTime is not null
+		<if test='isScheduler == "1"'>
+			and TIMESTAMPDIFF(HOUR, lastExecuteTime, now()) >= timeInterval
+		</if>
+		<if test="className != null and className != ''">
+			and className = #{className}
+		</if>
+	</select>
+	
+	<select id="findSchedulerInfo" parameterType="com.jzhl.kfsq.entity.sc.SchedulerInfo" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where 
+		className = #{className}
+	</select>
+	
+	<update id="updateSchedulerInfo" parameterType="com.jzhl.kfsq.entity.sc.SchedulerInfo">
+		update
+		<include refid="tableName" />
+		set
+		<if test="schedulerName != null and schedulerName !=''">
+			schedulerName = #{schedulerName},
+		</if>
+		<if test="timeInterval != null and timeInterval !=''">
+			timeInterval = #{timeInterval},
+		</if>
+		<if test="lastExecuteTime != null and lastExecuteTime !=''">
+			lastExecuteTime = #{lastExecuteTime},
+		</if>
+		<if test="updateUserId != null">
+			updateUserId = #{updateUserId},
+		</if>
+		<if test="isValid != null">
+			isValid = #{isValid},
+		</if>
+		<if test="finishExecuteTime != null">
+			finishExecuteTime = #{finishExecuteTime},
+		</if>
+		updateTime = now()
+		where 
+		schedulerId = #{schedulerId}
+	</update>
+	
+	<update id="updateSchedulerInfoFinish" parameterType="com.jzhl.kfsq.entity.sc.SchedulerInfo">
+		update
+		<include refid="tableName" />
+		set
+		<if test="lastExecuteTime != null and lastExecuteTime !=''">
+			lastExecuteTime = #{lastExecuteTime},
+		</if>
+		finishExecuteTime = #{finishExecuteTime},
+		<if test="updateUserId != null">
+			updateUserId = #{updateUserId},
+		</if>
+		updateTime = now()
+		where 
+		schedulerId = #{schedulerId}
+	</update>
+
+</mapper>

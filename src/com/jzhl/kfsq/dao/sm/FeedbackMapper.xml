@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IFeedbackMapper">
+
+	<resultMap id="smFeedbackResultMap" type="com.jzhl.kfsq.entity.sm.Feedback">
+		<id property="contentId" column="contentId" />
+		<result property="contentValue" column="contentValue" />
+		<result property="memberId" column="memberId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	<resultMap id="pageResultMap" type="java.util.HashMap"
+		extends="smFeedbackResultMap"></resultMap>
+	<resultMap id="findResultMap" type="java.util.HashMap"
+		extends="smFeedbackResultMap"></resultMap>
+
+	<insert id="insertFeedback" parameterType="com.jzhl.kfsq.entity.sm.Feedback">
+		insert into SM_Feedback (
+		contentValue,
+		memberId,
+		createTime
+		)values (
+		#{contentValue},
+		#{memberId},
+		#{createTime}
+		)
+	</insert>
+
+	<!-- 查询意见反馈详情 -->
+	<select id="getFeedback" parameterType="map" resultType="com.jzhl.kfsq.entity.sm.Feedback">
+		select t2.nickName, t2.phone, t1.* from SM_Feedback t1 
+			LEFT JOIN MM_Member t2 on t1.memberId = t2.memberId 
+			where t1.contentId=#{contentId}
+	</select>
+
+	<!-- 分页查询意见反馈列表 -->
+	<select id="findFeedbackList" parameterType="map" resultMap="findResultMap">
+		select t2.nickName, t2.phone, t1.* from SM_Feedback t1 
+			LEFT JOIN MM_Member t2 on t1.memberId = t2.memberId
+			ORDER BY t1.createTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 查询意见反馈列表总数 -->
+	<select id="findFeedbackDataCount" parameterType="map" resultType="Integer">
+		select COUNT(contentId) from SM_Feedback
+	</select>
+
+
+</mapper> 

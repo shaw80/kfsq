@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.em.IEncyclopediaMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.em.Encyclopedia" id="baseResultMap">
+		<id property="encyclopediaId" column="encyclopediaId" />
+		<result property="classId" column="classId" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="readCount" column="readCount" />
+		<result property="url" column="url" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="baseResultMap"></resultMap>	
+	
+	<sql id="baseColumns">
+		encyclopediaId,
+		classId,
+		title,
+		content,
+		readCount,
+		url,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+	</sql>
+	
+	<!-- 插入数据，添加文章 -->
+	<insert id="insertEncyclopedia" parameterType="com.jzhl.kfsq.entity.em.Encyclopedia">
+		insert into EM_Encyclopedia
+		(
+			createTime
+			<if test="classId != null">
+				,classId
+			</if>
+			<if test="title != null">
+				,title
+			</if>
+			<if test="content != null">
+				,content
+			</if>
+			<if test="readCount != null">
+				,readCount
+			</if>
+			<if test="url != null">
+				,url
+			</if>
+			<if test="creatorUserId != null">
+				,creatorUserId
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId
+			</if>
+			<if test="updateTime != null">
+				,updateTime
+			</if>
+			,isValid
+			,serialNum
+		)
+		values
+		(
+			now()
+			<if test="classId != null">
+				,#{classId}
+			</if>
+			<if test="title != null">
+				,#{title}
+			</if>
+			<if test="content != null">
+				,#{content}
+			</if>
+			<if test="readCount != null">
+				,#{readCount}
+			</if>
+			<if test="url != null">
+				,#{url}
+			</if>
+			<if test="creatorUserId != null">
+				,#{creatorUserId}
+			</if>
+			<if test="updateUserId != null">
+				,#{updateUserId}
+			</if>
+			<if test="updateTime != null">
+				,#{updateTime}
+			</if>
+			,1
+			,0
+		)
+	</insert>
+	
+	<!-- 编辑、启用、禁用 -->
+	<update id="updateEncyclopedia" parameterType="com.jzhl.kfsq.entity.em.Encyclopedia">
+		update EM_Encyclopedia set
+			updateTime = now()
+			<if test="title != null and title != ''">
+				,title = #{title}
+			</if>
+			<if test="readCount != null">
+				,readCount = #{readCount}
+			</if>
+			<if test="isValid != null">
+				,isValid = #{isValid}
+			</if>
+			<if test="url != null">
+				,url = #{url}
+			</if>
+			<if test="content != null">
+				,content = #{content}
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId = #{updateUserId}
+			</if>
+		where 
+			encyclopediaId = #{encyclopediaId}
+	</update>
+	
+	<select id="findEncyclopedia" parameterType="com.jzhl.kfsq.entity.em.Encyclopedia" resultType="com.jzhl.kfsq.entity.em.Encyclopedia">
+		select 
+		<include refid="baseColumns" />
+		from EM_Encyclopedia
+		where classId = #{classId} and isValid = 1
+		order by serialNum
+	</select>
+	
+	<!-- 分页查询文章列表 -->
+	<select id="findEncyclopediaList" parameterType="map" resultMap="baseResultMap">
+		select t1.*,
+			 t2.name
+ 		from EM_Encyclopedia t1
+		LEFT JOIN SM_User t2 on t1.creatorUserId = t2.userId
+		where t1.classId = #{classId}
+		<if test="title != null">
+			and title like '%${title}%'
+		</if>
+		order by t1.createTime desc
+		limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 分页查询文章列表总页数 -->
+	<select id="getEncyclopediaDataCount" parameterType="map" resultType="Integer">
+		select count(encyclopediaId) from EM_Encyclopedia 
+		where classId = #{classId}
+		<if test="title != null">
+			and title like '%${title}%'
+		</if>
+	</select>
+</mapper>

@@ -1,0 +1,910 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IBuildingCommentMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.cm.BuildingComment" id="baseResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="parentCommentId" column="parentCommentId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="content" column="content" />
+		<result property="isTop" column="isTop" />
+		<result property="auditStatus" column="auditStatus" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.cm.BuildingCommentReceiveDataSet" id="giftResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="content" column="content" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		commentId,
+		parentCommentId,
+		buildingId,
+		content,
+		isTop,
+		auditStatus,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        CM_BuildingComment
+    </sql>
+	
+	<select id="findBuildingComment" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" resultType="com.jzhl.kfsq.entity.cm.BuildingComment">
+		select 
+		<include refid="baseColumns" />
+		from CM_BuildingComment
+		where 
+			<trim prefixOverrides="and">
+			<if test="buildingId != null">
+				and buildingId = #{buildingId}
+			</if>
+			<if test="isValid != null">
+				and isValid = #{isValid}
+			</if>
+			<if test="parentCommentId != null">
+				and parentCommentId = #{parentCommentId}
+			</if>
+		</trim>
+		order by isTop desc, createTime desc
+	</select>
+	
+	<insert id="insertBuildingComment" useGeneratedKeys="true" keyProperty="commentId" >
+		insert into CM_BuildingComment
+		(
+			<trim prefixOverrides=",">
+				<if test = "parentCommentId != null">
+					,parentCommentId
+				</if>
+				,buildingId
+				,content
+				<if test = "isTop != null">
+					,isTop
+				</if>
+				<if test = "replyParentUserId != null">
+					,replyParentUserId
+				</if>
+				,auditStatus
+				,isValid
+				,creatorUserId
+				,createTime
+			</trim>
+		)
+		values
+		(
+			<trim prefixOverrides=",">
+				<if test = "parentCommentId != null">
+					,#{parentCommentId}
+				</if>
+				,#{buildingId}
+				,#{content}
+				<if test = "isTop != null">
+					,#{isTop}
+				</if>
+				<if test = "replyParentUserId != null">
+					,#{replyParentUserId}
+				</if>
+				,0
+				,#{isValid}
+				,#{creatorUserId}
+				,now()
+			</trim>
+		)
+	</insert>
+	
+	<select id="findBuildingCommentBycreatorIdByPage" parameterType="map" resultMap="giftResultMap">
+		select 
+		bc.commentId commentId, 
+		b.buildingName buildingName, 
+		bc.content content, 
+		bc.createTime createTime 
+		from 
+		CM_BuildingComment bc, 
+		BM_Building b 
+		where 
+		bc.creatorUserId = #{creatorUserId} 
+		and 
+		bc.parentCommentId = 0 
+		and 
+		bc.isValid = 1 
+		and 
+		bc.buildingId = b.buildingId 
+		order by bc.createTime desc 
+		limit #{begin}, #{length}
+	</select>
+	
+	<select id="countBuildingCommentBycreatorIdByPage" parameterType="Integer" resultType="Integer">
+		select 
+		count(bc.commentId) 
+		from 
+		CM_BuildingComment bc, 
+		BM_Building b 
+		where 
+		bc.creatorUserId = #{creatorUserId} 
+		and 
+		bc.parentCommentId = 0 
+		and 
+		bc.isValid = 1 
+		and 
+		bc.buildingId = b.buildingId 
+	</select>
+	
+	<!-- 评论管理-关注发表列表 -->
+	<select id="findBuildingCommentList" parameterType="map" resultType="com.jzhl.kfsq.dataset.cm.BuildingCommentDataSet">
+		 
+		 select * from 
+		 (
+			 select t1.*, 
+					t2.account, 
+					t2.nickName,
+					(select COUNT(imgId) from CM_CommentImg t4 where t4.commentType = 0 and t4.commentId = t1.commentId) imgNum,
+					(select COUNT(commentId) from CM_BuildingComment WHERE parentCommentId = t1.commentId ) as replyCommentNum,
+	                (select COUNT(commentId) from CM_BuildingComment WHERE parentCommentId = t1.commentId and auditStatus=0) as unapprovedReplyCommentNum,
+					(SELECT
+						GROUP_CONCAT(CONCAT(t4.commentType))
+				  	) commentTypeList,
+					t3.buildingName
+					from CM_BuildingComment t1 
+					LEFT JOIN MM_Member t2 on t1.creatorUserId = t2.memberId
+					LEFT JOIN BM_Building t3 on t1.buildingId = t3.buildingId
+					LEFT JOIN CM_CommentType t4 on t1.commentId = t4.commentId
+				<where>
+					 <if test="parentCommentId != null">
+				        t1.parentCommentId = #{parentCommentId}
+				     </if>
+				     <if test="parentCommentId == null">
+				        and t1.parentCommentId = 0
+				     </if>
+					 <if test="buildingName != null">
+				        and t3.buildingName like '%${buildingName}%'
+				     </if>
+				     <if test="auditStatus != null">
+				        and t1.auditStatus = #{auditStatus}
+				     </if>
+				     <if test="isValid != null">
+				        and t1.isValid = #{isValid}
+				     </if>
+				</where>
+				GROUP BY t1.commentId
+				order by t1.isTop desc, t1.updateTime desc, t1.createTime desc
+			) as a
+			<where>
+				 <if test="isCommentType == 0">
+			       commentTypeList is null
+			     </if>
+			     <if test="isCommentType == 1">
+			       and commentTypeList is not null
+			     </if>
+			     <if test="unApprovedReplyNum == 0">
+			       and unapprovedReplyCommentNum = 0
+			     </if>
+			     <if test="unApprovedReplyNum == 1">
+			       and unapprovedReplyCommentNum <![CDATA[ > ]]> 0
+			     </if>
+			</where>
+			 
+			limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 评论管理-关注发表列表总数 -->
+	<select id="findBuildingCommentDataCount" parameterType="map" resultType="Integer">
+	   	 select count(commentId) from 
+	   	 (
+	   	 select t1.commentId,
+	   	 	 	(select COUNT(commentId) from CM_BuildingComment WHERE parentCommentId = t1.commentId and auditStatus=0) as unapprovedReplyCommentNum,
+	   	 		(SELECT
+						GROUP_CONCAT(CONCAT(t4.commentType))
+				 ) commentTypeList
+				from CM_BuildingComment t1 
+				LEFT JOIN MM_Member t2 on t1.creatorUserId = t2.memberId
+				LEFT JOIN BM_Building t3 on t1.buildingId = t3.buildingId
+				LEFT JOIN CM_CommentType t4 on t1.commentId = t4.commentId
+			<where>
+				 <if test="parentCommentId != null">
+			        t1.parentCommentId = #{parentCommentId}
+			     </if>
+			     <if test="parentCommentId == null">
+			        and t1.parentCommentId = 0
+			     </if>
+				 <if test="buildingName != null">
+			        and t3.buildingName like '%${buildingName}%'
+			     </if>
+			     <if test="auditStatus != null">
+			        and t1.auditStatus = #{auditStatus}
+			     </if>
+			     <if test="isValid != null">
+			        and t1.isValid = #{isValid}
+			     </if>
+			</where>
+			GROUP BY t1.commentId
+		) as a
+		<where>
+			 <if test="isCommentType == 0">
+		        commentTypeList is null
+		     </if>
+		     <if test="isCommentType == 1">
+		        and commentTypeList is not null
+		     </if>
+		     <if test="unApprovedReplyNum == 0">
+		        and unapprovedReplyCommentNum = 0
+		     </if>
+		     <if test="unApprovedReplyNum == 1">
+		        and unapprovedReplyCommentNum <![CDATA[ > ]]> 0
+		     </if>
+	    </where>
+	</select>
+	
+	<!-- 评论管理-查看评论详情-->
+	<select id="getBuildingCommentInfo" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" resultType="com.jzhl.kfsq.dataset.cm.BuildingCommentDataSet">
+	   	 select * from CM_BuildingComment where commentId = #{commentId}
+	</select>
+	
+	<!-- 评论管理-查看评论详情-根据commentId查看图片-->
+	<select id="findCommentImgList" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" resultType="com.jzhl.kfsq.entity.cm.CommentImg">
+	   	 select * from CM_CommentImg where commentType=0 and isUse=1 and commentId = #{commentId}
+	</select>
+	
+	<!-- 审核通过、不通过 -->
+	<update id="updateBuildingComment" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment">
+	   update CM_BuildingComment set
+	   	 updateTime = now()
+	   	 <if test="auditStatus != null">
+			,auditStatus = #{auditStatus}
+		 </if>
+		 <if test="isTop != null">
+			,isTop = #{isTop}
+		 </if>
+		 <if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		 </if>
+		 <if test="isValid != null">
+			,isValid = #{isValid}
+		 </if>
+	   where 
+	    commentId=#{commentId} 
+	</update>
+	<!-- 区域代理添加评论-->
+		<insert id="saveAgentComment" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" useGeneratedKeys="true" keyProperty="commentId">
+		insert into CM_BuildingComment (
+		userName,
+		headPortrait,
+		parentCommentId,
+		buildingId,
+		content,
+		isTop,
+		auditStatus,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+		)values (
+		#{userName},
+		#{headPortrait},
+		#{parentCommentId},
+		#{buildingId},
+		#{content},
+		#{isTop},
+		#{auditStatus},
+		#{creatorUserId},
+		now(),
+		#{updateUserId},
+		#{updateTime},
+		#{isValid}
+		)
+	</insert>
+	<update id="updateAgentComment" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment">
+	update CM_BuildingComment set
+	updateTime = now()
+	 <if test="content != null">
+		,content = #{content}
+	 </if>
+		 <if test="userName != null">
+		,userName = #{userName}
+	 </if>
+	 	 <if test="headPortrait != null">
+		,headPortrait = #{headPortrait}
+	 </if>
+	 where 
+	 commentId=#{commentId}
+	</update>
+	<select id="findAgentCommentList" parameterType="map" resultType="com.jzhl.kfsq.dataset.cm.AgentCommentDataSet">
+		select 
+		* 
+		from CM_BuildingComment 
+		where creatorUserId is null
+		 and buildingId=#{buildingId}
+		 and isValid=#{isValid}
+		 limit #{rowStart}, #{offset}
+	</select>
+	
+	<select id="findAgentCommentCount" parameterType="map" resultType="Integer">
+		select 
+		count(*) 
+		from CM_BuildingComment 
+		where creatorUserId is null
+		and buildingId=#{buildingId}
+		 and isValid=#{isValid}
+	</select>
+	
+	<select id="getAgentComment" parameterType="com.jzhl.kfsq.entity.cm.BuildingComment" resultType="com.jzhl.kfsq.dataset.cm.AgentCommentDataSet">
+	select * from CM_BuildingComment where commentId=#{commentId}
+	</select>
+	
+	<!-- 根据楼盘编号和创建者编号查询评论 -->
+	<select id="findBuildingCommentByBuildingIdAndCreatorUserId" parameterType="com.jzhl.kfsq.dto.pm.IsVisitDto" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from 
+		CM_BuildingComment
+		where 
+		creatorUserId = #{memberId} 
+		and 
+		buildingId = #{buildingId}
+		and 
+		isValid = 1 
+	</select>
+	
+	<!-- 楼盘评价-全部评价 -->
+	<select id="findAllCommentByBuildingIdAndMemberId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="com.jzhl.kfsq.dataset.cm.MyComment">
+		SELECT
+			*
+		FROM
+			(
+				SELECT
+					cmbc.commentId commentId,
+					mmm.headPortrait headPortrait,
+					mmm.nickName nickName,
+					cmbc.content content,
+					DATE_FORMAT(
+						cmbc.createTime,
+						'%Y-%m-%d %H:%i'
+					) createTime
+				FROM
+					CM_BuildingComment cmbc,
+					MM_Member mmm
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.parentCommentId = 0
+				AND cmbc.auditStatus = 1
+				AND cmbc.isValid = 1
+				AND mmm.memberId = cmbc.creatorUserId
+			) result
+		ORDER BY
+			result.createTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 统计楼盘评价-全部评价的数量 -->
+	<select id="countAllCommentByBuildingIdAndMemberId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="Integer">
+		SELECT
+			COUNT(a.commentId)
+		FROM
+			(
+				SELECT
+			*
+		FROM
+			(
+				SELECT
+					cmbc.commentId commentId,
+					mmm.headPortrait headPortrait,
+					mmm.nickName nickName,
+					cmbc.content content,
+					DATE_FORMAT(
+						cmbc.createTime,
+						'%Y-%m-%d %H:%i'
+					) createTime
+				FROM
+					CM_BuildingComment cmbc,
+					MM_Member mmm
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.parentCommentId = 0
+				AND cmbc.auditStatus = 1
+				AND cmbc.isValid = 1
+				AND mmm.memberId = cmbc.creatorUserId
+				) result
+			ORDER BY
+				result.createTime DESC
+			) AS a
+	</select>
+	
+	<!-- 根据评论编号,memberId 算出回复数 -->
+	<select id="findReplyCount" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="Integer">
+		SELECT
+			COUNT(commentId)
+		FROM
+		(
+				select * from 
+					CM_BuildingComment b
+				<where>
+					<if test="memberId == null">
+						    b.parentCommentId = #{commentId}
+						AND b.auditStatus = 1
+					</if>
+					<if test="memberId != null">
+						    b.parentCommentId = #{commentId}
+						AND b.auditStatus = 1
+						UNION
+						(
+							SELECT
+								*
+							FROM
+								CM_BuildingComment b2
+							WHERE
+							    b2.parentCommentId = #{commentId}
+							and	b2.creatorUserId = #{memberId}
+						)
+					</if>
+				</where>
+		)as aaa
+	</select>
+	
+	<!-- 统计楼盘评价-根据好评 差评查询评价数 -->
+	<select id="countCommentByBuildingIdAndMemberIdAndComparisonValue" parameterType="com.jzhl.kfsq.dto.cm.MyCommentDto" resultType="Integer">
+		SELECT SUM(a.dimenValue) 
+		FROM 
+			(SELECT SUM( sumResult.weight * 0.01 * sumResult.dimensionValue)
+		<if test="comparisonType == 1">
+			<![CDATA[ >= ]]>
+		</if>
+		<if test="comparisonType == 2">
+			<![CDATA[ < ]]>
+		</if>
+			#{comparisonValue} as dimenValue
+		FROM 
+			(SELECT result.commentId, result.headPortrait, result.nickName,
+			bad.weight , bame.dimensionValue, result.content, result.count
+		FROM (SELECT cmbc.commentId AS commentId, mmm.headPortrait AS headPortrait,
+			mmm.nickName AS nickName, cmbc.content AS content,
+			DATE_FORMAT(cmbc.createTime, '%Y-%m-%d %H:%i') AS createTime
+			, (
+				SELECT COUNT(b.commentId)
+				FROM CM_BuildingComment b
+				WHERE b.parentCommentId = cmbc.commentId
+				) AS count
+		FROM CM_BuildingComment cmbc, MM_Member mmm
+		WHERE
+			cmbc.buildingId = #{buildingId}
+			AND cmbc.parentCommentId = 0
+			AND cmbc.auditStatus = 1
+			AND cmbc.isValid = 1
+			AND mmm.memberId = cmbc.creatorUserId
+			) result
+			LEFT JOIN
+				BA_MemberEvaluate bame
+			ON
+				result.commentId = bame.commentId
+			LEFT JOIN
+				BA_Dimension bad
+			ON
+				bad.dimensionCode = bame.dimensionCode and bad.dimensionType = 2
+			ORDER BY result.createTime DESC)
+				as sumResult
+			GROUP BY 
+				sumResult.commentId) a
+			LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 楼盘评价-根据好评 差评返回列表 -->
+	<select id="findCommentByBuildingIdAndMemberIdAndComparType" parameterType="com.jzhl.kfsq.dto.cm.MyCommentDto" resultType="com.jzhl.kfsq.dataset.cm.MyComment">
+		SELECT  sumResult.commentId,  SUM( sumResult.weight * 0.01 * sumResult.dimensionValue)  dimenValue,sumResult.headPortrait,sumResult.nickName, sumResult.content,sumResult.count, sumResult.createTime
+		FROM (SELECT result.commentId commentId, result.headPortrait headPortrait, result.nickName nickName, bad.weight , bame.dimensionValue, result.content content, result.count count, result.createTime
+		FROM (SELECT cmbc.commentId AS commentId, mmm.headPortrait AS headPortrait, mmm.nickName AS nickName, cmbc.content AS content, DATE_FORMAT(cmbc.createTime, '%Y-%m-%d %H:%i') AS createTime
+				, (
+					SELECT COUNT(b.commentId)
+					FROM CM_BuildingComment b
+					WHERE b.parentCommentId = cmbc.commentId
+					) AS count
+			FROM CM_BuildingComment cmbc, MM_Member mmm
+			WHERE cmbc.buildingId = #{buildingId}
+				AND cmbc.parentCommentId = 0
+				AND cmbc.auditStatus = 1
+				AND cmbc.isValid = 1
+				AND mmm.memberId = cmbc.creatorUserId
+			) result
+		LEFT JOIN
+			BA_MemberEvaluate bame
+		ON
+		 	result.commentId = bame.commentId
+		LEFT JOIN
+			BA_Dimension bad
+		ON
+			bad.dimensionCode = bame.dimensionCode and bad.dimensionType = 2
+		ORDER BY result.createTime DESC
+		)as sumResult		
+		GROUP BY sumResult.commentId
+		HAVING dimenValue
+		<if test="comparisonType == 1">
+			<![CDATA[ >= ]]>
+		</if>
+		<if test="comparisonType == 2">
+			<![CDATA[ < ]]>
+		</if>
+		#{comparisonValue}
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+		<!-- 统计楼盘评价-根据评论类型条数 -->
+	<select id="countCommentByBuildingIdAndMemberIdAndCommentType" parameterType="com.jzhl.kfsq.dto.cm.MyCommentDto" resultType="Integer">
+		SELECT
+			COUNT(a.commentId)
+		FROM
+			(
+				SELECT
+			*
+		FROM
+			(
+				SELECT
+					cmbc.commentId commentId,
+					mmm.headPortrait headPortrait,
+					mmm.nickName nickName,
+					cmbc.content content,
+					DATE_FORMAT(
+						cmbc.createTime,
+						'%Y-%m-%d %H:%i'
+					) createTime,
+					(
+						SELECT
+							COUNT(b.commentId)
+						FROM
+							CM_BuildingComment b
+						WHERE
+							b.parentCommentId = cmbc.commentId
+					) count
+				FROM
+					CM_BuildingComment cmbc,
+					MM_Member mmm,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.parentCommentId = 0
+				AND cmbc.auditStatus = 1
+				AND cmbc.isValid = 1
+				AND mmm.memberId = cmbc.creatorUserId
+				AND cmbc.commentId = cmct.commentId
+				AND cmct.commentType = #{commentType}
+				) result
+			ORDER BY
+				result.createTime DESC
+			) AS a
+	</select>
+	
+		<!-- 楼盘评价-根据评论类型查询列表 -->
+	<select id="findCommentByBuildingIdAndMemberIdAndCommentType" parameterType="com.jzhl.kfsq.dto.cm.MyCommentDto" resultType="com.jzhl.kfsq.dataset.cm.MyComment">
+		SELECT
+			*
+		FROM
+			(
+				SELECT
+					cmbc.commentId commentId,
+					mmm.headPortrait headPortrait,
+					mmm.nickName nickName,
+					cmbc.content content,
+					DATE_FORMAT(
+						cmbc.createTime,
+						'%Y-%m-%d %H:%i'
+					) createTime,
+					(
+						SELECT
+							COUNT(b.commentId)
+						FROM
+							CM_BuildingComment b
+						WHERE
+							b.parentCommentId = cmbc.commentId
+					) count
+				FROM
+					CM_BuildingComment cmbc,
+					MM_Member mmm,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.parentCommentId = 0
+				AND cmbc.auditStatus = 1
+				AND cmbc.isValid = 1
+				AND mmm.memberId = cmbc.creatorUserId
+				AND cmbc.commentId = cmct.commentId
+				AND cmct.commentType = #{commentType}
+			) result
+		ORDER BY
+			result.createTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 根据楼盘编号和创建者会员编号查询评论（楼盘评价-我的评价） -->
+	<select id="findMyCommentByBuildingIdAndCreatorId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="com.jzhl.kfsq.dataset.cm.MyComment">
+		SELECT
+			cmbc.commentId commentId,
+			mmm.headPortrait headPortrait,
+			mmm.nickName nickName,
+			cmbc.content content,
+			DATE_FORMAT(
+				cmbc.createTime,
+				'%Y-%m-%d %H:%i'
+			) createTime,
+			(
+				SELECT
+					COUNT(b.commentId)
+				FROM
+					CM_BuildingComment b
+				WHERE
+					b.parentCommentId = cmbc.commentId
+			) count
+		FROM
+			CM_BuildingComment cmbc,
+			MM_Member mmm
+		WHERE
+			mmm.memberId = #{memberId}
+		AND cmbc.buildingId = #{buildingId}
+		AND cmbc.auditStatus != 2
+		AND cmbc.parentCommentId = 0
+		AND cmbc.creatorUserId = mmm.memberId
+		ORDER BY
+			cmbc.createTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 统计根据楼盘编号和创建者会员编号查询评论总数（楼盘评价-我的评价） -->
+	<select id="countMyCommentByBuildingIdAndCreatorId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="Integer">
+		SELECT 
+			COUNT(result.commentId)
+		FROM
+		(
+			SELECT
+				cmbc.commentId commentId,
+				mmm.headPortrait headPortrait,
+				mmm.nickName nickName,
+				cmbc.content content,
+				DATE_FORMAT(
+					cmbc.createTime,
+					'%Y-%m-%d %H:%i'
+				) createTime,
+				(
+					SELECT
+						COUNT(b.commentId)
+					FROM
+						CM_BuildingComment b
+					WHERE
+						b.parentCommentId = cmbc.commentId
+				) count
+			FROM
+				CM_BuildingComment cmbc,
+				MM_Member mmm
+			WHERE
+				mmm.memberId = #{memberId}
+			AND cmbc.buildingId = #{buildingId}
+			AND cmbc.auditStatus != 2
+			AND cmbc.parentCommentId = 0
+			AND cmbc.creatorUserId = mmm.memberId
+			ORDER BY
+				cmbc.createTime DESC
+		) result
+	</select>
+	
+	<!-- 根据创建者会员编号查询评论（我的-我的评价） -->
+	<select id="findMyCommentByCreatorId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="com.jzhl.kfsq.dataset.cm.MyComment">
+		SELECT
+			cmbc.commentId commentId,
+			b.buildingId buildingId,
+			b.banner headPortrait,
+			b.buildingName nickName,
+			cmbc.content content,
+			DATE_FORMAT(
+				cmbc.createTime,
+				'%Y-%m-%d %H:%i'
+			) createTime,
+			(
+				SELECT
+					COUNT(bc.commentId)
+				FROM
+					CM_BuildingComment bc
+				WHERE
+					bc.parentCommentId = cmbc.commentId
+			) count
+		FROM
+			CM_BuildingComment cmbc,
+			BM_Building b
+		WHERE
+			cmbc.creatorUserId = #{memberId}
+		AND cmbc.parentCommentId = 0
+		AND cmbc.auditStatus != 2
+		AND cmbc.isValid = 1
+		AND cmbc.buildingId = b.buildingId
+		ORDER BY
+			createTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 统计根据创建者会员编号查询评论总数（我的-我的评价） -->
+	<select id="countMyCommentByCreatorId" parameterType="com.jzhl.kfsq.dto.cm.MyCommentParamDto" resultType="Integer">
+		SELECT 
+			COUNT(result.commentId)
+		FROM
+		(
+			SELECT
+				cmbc.commentId commentId,
+				b.banner headPortrait,
+				b.buildingName nickName,
+				cmbc.content content,
+				DATE_FORMAT(
+					cmbc.createTime,
+					'%Y-%m-%d %H:%i'
+				) createTime,
+				(
+					SELECT
+						COUNT(bc.commentId)
+					FROM
+						CM_BuildingComment bc
+					WHERE
+						bc.parentCommentId = cmbc.commentId
+				) count
+			FROM
+				CM_BuildingComment cmbc,
+				BM_Building b
+			WHERE
+				cmbc.creatorUserId = #{memberId}
+			AND cmbc.parentCommentId = 0
+			AND cmbc.auditStatus != 2
+			AND cmbc.isValid = 1
+			AND cmbc.buildingId = b.buildingId
+			ORDER BY
+				createTime DESC
+		) result
+	</select>
+	
+	<!-- 楼盘详情，根据楼盘编号查询一条时间最近的评论 -->
+	<select id="getBuildingCommentV3DataSet" parameterType="Integer" resultType="com.jzhl.kfsq.dataset.cm.BuildingCommentV3DataSet">
+		SELECT
+			cmbc.commentId commentId,
+			mmm.headPortrait headPortrait,
+			mmm.nickName nickName,
+			cmbc.content content,
+			DATE_FORMAT(
+				cmbc.createTime,
+				'%Y-%m-%d %H:%i'
+			) createTime,
+			(
+				SELECT
+					COUNT(cmbcr.commentId)
+				FROM
+					CM_BuildingComment cmbcr
+				WHERE
+					cmbcr.parentCommentId = cmbc.commentId
+				AND cmbcr.auditStatus = 1
+				AND cmbcr.isValid = 1
+			) countRepay
+		FROM
+			CM_BuildingComment cmbc,
+			MM_Member mmm
+		WHERE
+			cmbc.buildingId = #{buildingId}
+		AND cmbc.parentCommentId = 0
+		AND cmbc.auditStatus = 1
+		AND cmbc.createTime IN (
+			SELECT
+				MAX(createTime)
+			FROM
+				CM_BuildingComment
+			WHERE
+				buildingId = #{buildingId}
+			AND parentCommentId = 0
+			AND auditStatus = 1
+		)
+		AND cmbc.isValid = 1
+		AND cmbc.creatorUserId = mmm.memberId
+		limit 0, 1
+	</select>
+	
+	<!-- 根据评论编号计算评论分数 -->
+	<select id="getCommentScore" parameterType="int" resultType="Integer">
+		SELECT
+			(
+				IFNULL(
+					(
+						SELECT
+							(
+								bame.dimensionValue * bad.weight / 100
+							) score
+						FROM
+							BA_MemberEvaluate bame,
+							BA_Dimension bad
+						WHERE
+							bame.dimensionCode = bad.dimensionCode 
+						AND bad.dimensionType = 2
+						AND bame.dimensionCode = 'unitMap'
+						AND bame.commentId = #{commentId}
+						GROUP BY
+							bame.dimensionCode
+					),
+					0
+				) + IFNULL(
+					(
+						SELECT
+							(
+								bame.dimensionValue * bad.weight / 100
+							) score
+						FROM
+							BA_MemberEvaluate bame,
+							BA_Dimension bad
+						WHERE
+							bame.dimensionCode = bad.dimensionCode
+						AND bad.dimensionType = 2	
+						AND bame.dimensionCode = 'communityQuality'
+						AND bame.commentId = #{commentId}
+						GROUP BY
+							bame.dimensionCode
+					),
+					0
+				) + IFNULL(
+					(
+						SELECT
+							(
+								bame.dimensionValue * bad.weight / 100
+							) score
+						FROM
+							BA_MemberEvaluate bame,
+							BA_Dimension bad
+						WHERE
+							bame.dimensionCode = bad.dimensionCode
+						AND bad.dimensionType = 2	
+						AND bame.dimensionCode = 'education'
+						AND bame.commentId = #{commentId}
+						GROUP BY
+							bame.dimensionCode
+					),
+					0
+				) + IFNULL(
+					(
+						SELECT
+							(
+								bame.dimensionValue * bad.weight / 100
+							) score
+						FROM
+							BA_MemberEvaluate bame,
+							BA_Dimension bad
+						WHERE
+							bame.dimensionCode = bad.dimensionCode
+						AND bad.dimensionType = 2	
+						AND bame.dimensionCode = 'around'
+						AND bame.commentId = #{commentId}
+						GROUP BY
+							bame.dimensionCode
+					),
+					0
+				) + IFNULL(
+					(
+						SELECT
+							(
+								bame.dimensionValue * bad.weight / 100
+							) score
+						FROM
+							BA_MemberEvaluate bame,
+							BA_Dimension bad
+						WHERE
+							bame.dimensionCode = bad.dimensionCode
+						AND bad.dimensionType = 2								
+						AND bame.dimensionCode = 'traffic'
+						AND bame.commentId = #{commentId}
+						GROUP BY
+							bame.dimensionCode
+					),
+					0
+				)
+			) score
+	</select>
+	
+</mapper>

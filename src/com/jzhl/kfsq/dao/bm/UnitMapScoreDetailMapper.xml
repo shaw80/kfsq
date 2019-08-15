@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IUnitMapScoreDetailMapper">
+	
+	<select id="getUnitMapScoreDetail" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.UnitMapScoreDetail">
+		SELECT
+			ifnull(unitMapScore, 0) unitMapScore,
+			ifnull((
+				SELECT
+					COUNT(memberId)
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BA_MemberEvaluate
+						WHERE
+							buildingId = #{buildingId}
+						AND dimensionCode = 'unitMap'
+						AND isValid = 1
+						GROUP BY
+							memberId
+					) a
+			), 0) countMember,
+			ifnull((
+				SELECT
+					COUNT(unitMapId)
+				FROM
+					BM_UnitMap
+				WHERE
+					buildingId = #{buildingId}
+			    AND
+			        isValid = 1
+			), 0) countUintMap
+		FROM
+			BA_BuildingScore
+		WHERE
+		    buildingId = #{buildingId}
+		AND
+		    isValid = 1
+	</select>
+	
+</mapper> 

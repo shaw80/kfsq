@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingAreaDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dto.bm.BuildingAreaDto" id="baseResultMap">
+		<id property="areaId" column="areaId" />
+		<result property="cityId" column="cityId" />
+		<result property="areaName" column="areaName" />
+		<result property="buildingCount" column="buildingCount" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		sa.areaId as areaId, 
+		sa.areaName as areaName, 
+		sa.cityId as cityId,
+		sa.longitude as longitude,
+		sa.latitude as latitude,
+		count(bmb.buildingId ) as buildingCount
+	</sql>
+	
+	<sql id="baseTables">
+		BM_Building bmb, SM_Area sa
+	</sql>
+	
+	<select id="findBuildingAreaDto" parameterType="com.jzhl.kfsq.dto.bm.BuildingAreaDto" resultMap="baseResultMap">		
+		SELECT
+			sa.areaId AS areaId,
+			sa.areaName AS areaName,
+			sa.cityId AS cityId,
+			sa.longitude AS longitude,
+			sa.latitude AS latitude,
+		 	(
+				SELECT
+					count(bmb.buildingId)
+				FROM
+					BM_Building bmb
+				<where>
+					<if test="cityId != null">
+						bmb.county = sa.areaId
+					</if>
+					<if test="areaId != null">
+						bmb.secondAreaId = sa.areaId
+					</if>
+					AND bmb.longitude IS NOT NULL
+					AND bmb.longitude != ''
+					AND bmb.latitude IS NOT NULL
+					AND bmb.latitude != ''
+					AND bmb.isValid = 1
+					<if test="priceId != null and priceId != 0">
+						and 
+						<![CDATA[bmb.averagePrice >= (select smpi.minPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+						and 
+						<![CDATA[bmb.averagePrice <= (select smpi.maxPrice from SM_PriceInfo smpi where smpi.priceId = #{priceId} and smpi.isValid = 1)]]>
+					</if>
+					<if test="featureId != null and featureId != 0">
+						and bmb.buildingId in (select bbf.buildingId from BM_BuildingFeature bbf where bbf.featureId = #{featureId} and bbf.isValid = 1)
+					</if>
+				</where>
+			) AS buildingCount
+		FROM
+			SM_Area sa
+		<where>
+			sa.isValid = 1
+			<if test="cityId != null">
+				AND	sa.cityId = #{cityId}
+				AND sa.parentId is null or parentId = 0
+			</if>
+			<if test="areaId != null">
+				and sa.parentId = #{areaId}
+			</if>
+		</where>
+			
+	</select>
+	
+	<!-- 按照某年月份统计楼盘新增总数 -->
+	<select id="findBuildingStatistical" parameterType="com.jzhl.kfsq.dto.bm.BuildingDto" resultType="com.jzhl.kfsq.dataset.sm.BuildingStatisticalDataSet">
+		select DATE_FORMAT(createTime,'%Y-%m') as month
+		 ,COUNT(buildingId) buildingNum
+       FROM  BM_Building
+	    WHERE <![CDATA[DATE_SUB(CURDATE(), INTERVAL 12 MONTH) <= date(createTime)]]>
+	    	and agentId = #{agentId}
+			group by month   
+			order by month
+	</select>
+	
+	<!-- 按照月份统计充值楼盘新增总数 -->
+	<select id="getRechargeBuildingNum" parameterType="com.jzhl.kfsq.dto.bm.BuildingDto" resultType="int">
+		select COUNT(DISTINCT(t1.buildingId)) buildingNum
+			from FM_EnvelopeRecharge t1 
+			where <![CDATA[DATE_FORMAT(t1.createTime,'%Y-%m') = #{month}]]>
+			and  t1.type =0 and t1.isValid =1 and t1.buildingId in
+			(
+				select buildingId from BM_Building 
+
+				  where agentId in 
+				  (
+					  select userId from SM_User 
+					   where						  					  
+						   		branchId = #{agentId}					  				
+				  )
+			)
+			and t1.buildingId NOT in (
+				select DISTINCT(t1.buildingId) buildingNum
+				from FM_EnvelopeRecharge t1 
+				where <![CDATA[DATE_FORMAT(t1.createTime,'%Y-%m') < #{month}]]>
+				and  t1.type =0 and t1.isValid =1 and t1.buildingId in
+				(
+					select buildingId from BM_Building 
+	
+					  where agentId in 
+					  (
+						  select userId from SM_User 
+						   where						  					  
+							   		branchId = #{agentId}					  				
+					  )
+				)
+			)
+	</select>
+</mapper>

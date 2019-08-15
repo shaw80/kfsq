@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IUserMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.User" id="baseResultMap">
+		<id property="userId" column="userId" />
+		<result property="branchId" column="branchId" />
+		<result property="account" column="account" />
+		<result property="password" column="password" />
+		<result property="name" column="name" />
+		<result property="userType" column="userType" />
+		<result property="roleId" column="roleId" />
+		<result property="mobilePhone" column="mobilePhone" />
+		<result property="isValid" column="isValid" />
+		<result property="leaderUserId" column="leaderUserId" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="appUserType" column="appUserType" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		userId,
+		branchId,
+		account,
+		password,
+		name,
+		userType,
+		appUserType,
+		roleId,
+		mobilePhone,
+		isValid,
+		leaderUserId,
+		headPortrait,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_User
+    </sql>
+	
+	<!-- 添加用户信息 -->
+	<insert id="insertUser" parameterType="com.jzhl.kfsq.entity.sm.User" useGeneratedKeys="true" keyProperty="userId">
+		insert into 
+		<include refid="tableName" />
+		(
+			account
+			,password
+			,userType
+			<if test="appUserType != null">
+				,appUserType
+			</if>			
+			,roleId
+			<if test="mobilePhone != null">
+				,mobilePhone
+			</if>
+			<if test="branchId != null">
+				,branchId
+			</if>
+			<if test="name != null">
+				,name
+			</if>
+			<if test="isValid != null">
+				,isValid
+			</if>
+			<if test="leaderUserId != null">
+				,leaderUserId
+			</if>
+			<if test="headPortrait != null">
+				,headPortrait
+			</if>
+			<if test="creatorUserId != null">
+				,creatorUserId
+			</if>
+				,createTime
+			<if test="updateUserId != null">
+				,updateUserId
+			</if>
+			<if test="updateTime != null">
+				,updateTime
+			</if>
+			<if test="IDCardImg != null">
+				,IDCardImg
+			</if>
+		)
+		values
+		(
+			#{account}
+			,#{password}
+			,#{userType}
+			<if test="appUserType != null">
+				,#{appUserType}
+			</if>			
+			,#{roleId}
+			<if test="mobilePhone != null">
+				,#{mobilePhone}
+			</if>
+			<if test="branchId != null">
+				,#{branchId}
+			</if>
+			<if test="name != null">
+				,#{name}
+			</if>
+			<if test="isValid != null">
+				,#{isValid}
+			</if>
+			<if test="leaderUserId != null">
+				,#{leaderUserId}
+			</if>
+			<if test="headPortrait != null">
+				,#{headPortrait}
+			</if>
+			<if test="creatorUserId != null">
+				,#{creatorUserId}
+			</if>
+				,now()
+			<if test="updateUserId != null">
+				,#{updateUserId}
+			</if>
+			<if test="updateTime != null">
+				,now()
+			</if>
+			<if test="IDCardImg != null">
+				,#{IDCardImg}
+			</if>
+		)
+	</insert>
+	
+	<!-- 删除用户信息 -->
+	<update id="deleteUser" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		userId = #{userId}
+	</update>
+	
+	<!-- 更新用户信息 -->
+	<update id="updateUser" parameterType="com.jzhl.kfsq.entity.sm.User">
+		update 
+		<include refid="tableName" /> 
+		set
+		updateTime = now()
+		<if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		</if>
+		<if test="branchId != null">
+			,branchId = #{branchId}
+		</if>
+		<if test="password != null">
+			,password = #{password}
+		</if>
+		<if test="name != null">
+			,name = #{name}
+		</if>
+		<if test="userType != null">
+			,userType = #{userType}
+		</if>
+		<if test="appUserType != null">
+			,appUserType = #{appUserType}
+		</if>		
+		<if test="roleId != null">
+			,roleId = #{roleId}
+		</if>
+		<if test="mobilePhone != null">
+			,mobilePhone = #{mobilePhone}
+		</if>
+		<if test="isValid != null">
+			,isValid = #{isValid}
+		</if>
+		<if test="leaderUserId != null">
+			,leaderUserId = #{leaderUserId}
+		</if>
+		<if test="headPortrait != null">
+			,headPortrait = #{headPortrait}
+		</if>
+		<if test="IDCardImg != null">
+			,IDCardImg = #{IDCardImg}
+		</if>
+		where
+		userId = #{userId}
+	</update>
+	
+	<!-- 根据用户编号查询用户信息 -->
+	<select id="getUser" parameterType="com.jzhl.kfsq.entity.sm.User" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		 1 = 1 
+		<if test="userType != null and userType != ''">
+			and userType = #{userType}
+		</if>		 
+		<if test="account != null and account != ''">
+			and account = #{account}
+		</if>
+		<if test="password != null and password != ''">
+			and password = #{password}
+		</if> 
+		<if test="userId != null and userId != ''">
+			and userId = #{userId}
+		</if>	
+		<if test="isValid != null and isValid != ''">
+			and isValid = #{isValid}
+		</if>
+		<if test="mobilePhone != null and mobilePhone != ''">
+			and mobilePhone = #{mobilePhone}
+		</if>		
+	</select>
+	
+	<!-- 登录用户信息查询 -->
+	<select id="getLoginUser" parameterType="com.jzhl.kfsq.entity.sm.User" resultMap="baseResultMap">
+		select
+		    A.userId,
+		    A.branchId,
+		    A.account,
+		    A.password,
+		    A.name,
+		    A.userType,
+		    case 
+		    when D.roleCode = 'director' then 0 
+		    when D.roleCode = 'manager' then 1 
+		    when D.roleCode = 'saler' then 2  
+		    else 9
+		    end as appUserType,
+		    A.roleId,
+		    A.mobilePhone,
+		    A.isValid,
+		    A.leaderUserId,
+		    A.headPortrait,
+		    A.creatorUserId,
+		    A.createTime,
+		    A.updateUserId,
+		    A.updateTime,
+		    C.buildingName 		   
+		from
+		    house.SM_User A
+		    inner join house.SM_Role D on A.roleId = D.roleId 
+		    left outer join house.SM_UserBuilding B on A.userId = B.userId and B.isValid = 1  
+		    left outer join house.BM_Building C on B.buildingId = C.buildingId 
+		where
+		 1 = 1 
+		<if test="userType != null and userType != ''">
+			and A.userType = #{userType}
+		</if>		 
+		<if test="account != null and account != ''">
+			and A.account = #{account}
+		</if>
+		<if test="password != null and password != ''">
+			and A.password = #{password}
+		</if> 
+		<if test="userId != null and userId != ''">
+			and A.userId = #{userId}
+		</if>	
+		<if test="isValid != null and isValid != ''">
+			and A.isValid = #{isValid}
+		</if>
+		<if test="mobilePhone != null and mobilePhone != ''">
+			and A.mobilePhone = #{mobilePhone}
+		</if>		
+	</select>		
+	
+	<!-- 根据条件查询用户信息列表 -->
+	<select id="getUsers" parameterType="java.util.HashMap" resultMap="baseResultMap">
+		SELECT
+		<include refid="baseColumns" />
+		FROM
+		<include refid="tableName" />
+		<where>
+		    <trim prefixOverrides="and">
+		        <if test="userType != null and userType != ''">
+			    and userType = #{userType}
+		        </if>		 
+		        <if test="account != null and account != ''">
+			    and account = #{account}
+		        </if>
+		        <if test="password != null and password != ''">
+			    and password = #{password}
+		        </if> 
+		        <if test="userId != null and userId != ''">
+			    and userId = #{userId}
+		        </if>	
+		        <if test="isValid != null and isValid != ''">
+			    and isValid = #{isValid}
+		        </if>
+		        <if test="mobilePhone != null and mobilePhone != ''">
+			    and mobilePhone = #{mobilePhone}
+		        </if>		
+			</trim>
+		</where>		
+	</select>
+	
+	<!-- 根据用户编号查询用户信息  更新时用-->
+	<select id="getUserInfo" parameterType="com.jzhl.kfsq.entity.sm.User" resultMap="baseResultMap">
+		select *  from SM_User
+		where
+		 1 = 1 		 
+		<if test="account != null and account != ''">
+			and account = #{account}
+		</if>
+		<if test="mobilePhone != null and mobilePhone != ''">
+			and mobilePhone = #{mobilePhone}
+		</if> 
+		<if test="userId != null and userId != ''">
+			and userId != #{userId}
+		</if>		
+	</select>
+	
+	<!-- 根据账户查询用户信息：用户登录查询，查询开通和未开通所有 -->
+	<select id="getUserByAccount" parameterType="String" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		account = #{account}
+	</select>
+	
+	<!-- 分页查询全部用户信息 -->
+	<select id="findAllByPage" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		limit #{begin}, #{length}
+	</select>
+	
+	<!-- 查询代理商公司名称与UserID -->
+	<select id="findBranchList" resultType="com.jzhl.kfsq.dataset.sm.UserDataSet">
+		select t1.userId, t2.comanyName, t1.branchId from SM_User t1 
+		 LEFT JOIN SM_Branch t2 on t1.branchId = t2.branchId
+		 where t1.roleId =(SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0') and t1.isValid =1 and t2.status=1
+	</select>
+	
+	<!-- 根据代理商userid查询其下管理人员总数与列表-->
+	<select id="findUserList" parameterType="map" resultMap="baseResultMap">
+		select t1.*, t2.roleName, t2.isValid roleStatus
+			, ( select name from SM_User where userid = t1.leaderUserId) leaderName
+			from SM_User t1 
+			LEFT JOIN SM_Role t2 on t1.roleId = t2.roleId 
+		where t1.leaderUserId = #{userId}
+			<if test="isValid != null">
+				and t1.isValid=#{isValid}
+			</if>
+			<if test="roleId != null">
+				and t1.roleId=#{roleId}
+			</if>
+			<if test="appUserType != null">
+				and t1.appUserType=#{appUserType}
+			</if>
+			<if test="keyword != null">
+				and (t1.name like '%${keyword}%'
+				or t1.account like '%${keyword}%'
+				or t2.roleName like '%${keyword}%')
+			</if>
+			ORDER BY t1.createTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 根据代理商userid查询其下管理人员总数与列表 -->
+	<select id="getUserDataCount" parameterType="map" resultType="Integer">
+		select count(t1.userId)
+			from SM_User t1 
+			LEFT JOIN SM_Role t2 on t1.roleId = t2.roleId 
+		where t1.leaderUserId = #{userId}
+			<if test="isValid != null">
+				and t1.isValid=#{isValid}
+			</if>
+			<if test="roleId != null">
+				and t1.roleId=#{roleId}
+			</if>
+			<if test="appUserType != null">
+				and t1.appUserType=#{appUserType}
+			</if>
+			<if test="keyword != null">
+				and (t1.name like '%${keyword}%'
+				or t1.account like '%${keyword}%'
+				or t2.roleName like '%${keyword}%')
+			</if>
+	</select>
+	
+	<!-- 用户，楼盘中间表插入数据 -->
+	<insert id="insertBuildingUser" parameterType="com.jzhl.kfsq.entity.sm.UserBuilding">
+	   insert into SM_UserBuilding (
+	     userId,
+	     buildingId,
+	     isValid,
+	     creatorUserId,
+	     createTime,
+	     <if test="updateUserId != null">
+			updateUserId,
+		 </if>
+	     <if test="updateTime != null">
+			updateTime,
+		 </if>
+	     status
+	   )values (
+	     #{userId},
+	     #{buildingId},
+	     #{isValid},
+	     #{creatorUserId},
+	     now(),
+	     <if test="updateUserId != null">
+	     	#{updateUserId},
+		 </if>
+		 <if test="updateTime != null">
+		    #{updateTime},
+		 </if>
+	     #{status}
+	   )
+	</insert>
+	
+	<!-- 查询登录销售总监旗下的所有销售经理列表-每个销售团队-->
+	<select id="findSaleLeaderList" parameterType="com.jzhl.kfsq.dto.sm.StatisticalDto" resultType="com.jzhl.kfsq.dataset.sm.UserDataSet">
+		select * from SM_User where roleId = (SELECT roleId from SM_Role where roleCode = 'manager' and roleType = '0') and appUserType = 1 and leaderUserId = #{userId}
+	</select>
+	
+	<!-- 根据userId 查旗下所有售楼员接待用户总量 -->
+	<select id="getMemberCount" parameterType="map" resultType="Integer">
+		select count(salerCustomerId) 
+			from PM_SalerCustomer 
+		where userId in (select userId from SM_User where leaderUserId = #{userId} and roleId = (SELECT roleId from SM_Role where roleCode = 'saler' and roleType = '0'))
+		    <if test="dateStart != null and dateEnd != null">
+		        and createTime between #{dateStart} and #{dateEnd}
+		    </if> 
+	</select>
+	
+	<!-- 根据登录ID售楼总监检索其下所有置业顾问列表-->
+	<select id="findSaleUserList" parameterType="map" resultMap="baseResultMap">
+		select t1.*, t2.roleName, t2.isValid roleStatus
+			, ( select name from SM_User where userid = t1.leaderUserId) leaderName
+			from SM_User t1 
+			LEFT JOIN SM_Role t2 on t1.roleId = t2.roleId 
+		where t1.appUserType = 2 and t1.roleId = (SELECT roleId from SM_Role where roleCode = 'saler' and roleType = '0') and t1.leaderUserId in 
+			(
+				select userId from SM_User where leaderUserId = #{userId}
+			)
+			ORDER BY t1.createTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 根据登录ID售楼总监检索其下所有置业顾问列表总数 -->
+	<select id="getSaleUserDataCount" parameterType="map" resultType="Integer">
+		select count(t1.userId)
+			from SM_User t1 
+			LEFT JOIN SM_Role t2 on t1.roleId = t2.roleId 
+		where t1.appUserType = 2 and t1.roleId = (SELECT roleId from SM_Role where roleCode = 'saler' and roleType = '0') and t1.leaderUserId in 
+			(
+				select userId from SM_User where leaderUserId = #{userId}
+			)
+	</select>
+	
+	<!-- 根据销售总监登录ID查询其负责哪个楼盘 -->
+	<select id="getUserBuilding" parameterType="Integer" resultType="Integer">
+		select buildingId from SM_UserBuilding where userId = #{userId}
+	</select>
+	
+	<select id="getUserCityId" parameterType="Integer" resultType="Integer">
+		select 
+		sb.branchCityId 
+		from 
+		SM_Branch sb
+		where 
+		sb.branchId = (
+			select 
+			su.branchId 
+			from 
+			SM_User su
+			where 
+			su.userId = #{userId}
+			and 
+			su.isValid = 1
+			and 
+			su.userType = 0
+		)
+	</select>
+	
+	<!-- 根据楼盘ID查询其销售总监userId -->
+	<select id="getUserIdByBuildingId" parameterType="Integer" resultType="Integer">
+		select t1.userId from SM_UserBuilding  t1 
+			LEFT JOIN SM_User t2 on t2.userId = t1.userId
+			where t2.appUserType=0 
+			 	  and
+			      t1.buildingId = #{buildingId}
+	</select>
+	
+</mapper>

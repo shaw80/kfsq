@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.mm.IFollowMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.mm.Follow" id="baseResultMap">
+		<id property="followId" column="followId" />
+		<result property="memberId" column="memberId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		followId,
+		memberId,
+		buildingId,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<insert id="insertFollow" parameterType="com.jzhl.kfsq.entity.mm.Follow" useGeneratedKeys="true" keyProperty="followId" >
+		insert into MM_Follow
+		(
+			memberId
+			,buildingId
+			,isValid
+			,creatorUserId
+			,createTime
+		)
+		values
+		(
+			#{memberId}
+			,#{buildingId}
+			,1
+			,#{creatorUserId}
+			,now()
+		)
+	</insert>
+	
+	
+	<update id="updateFollow" parameterType="com.jzhl.kfsq.entity.mm.Follow">
+		update MM_Follow 
+		set
+			updateTime = now()
+			, updateUserId = #{updateUserId}
+			<if test="isValid != null">
+				, isValid = #{isValid}
+			</if>
+		where followId = #{followId}
+		and memberId = #{memberId}
+	</update>
+	
+	<select id="findFollow" parameterType="com.jzhl.kfsq.entity.mm.Follow" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from MM_Follow
+		where 
+		<trim prefixOverrides="and">
+			<if test="buildingId != null">
+				and buildingId = #{buildingId}
+			</if>
+			<if test="memberId != null">
+				and memberId = #{memberId}
+			</if>
+			<if test="isValid != null">
+				and isValid = #{isValid}
+			</if>
+		</trim>
+	</select>
+
+</mapper>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.ICommentEnvelopeChanceMapper">
+
+	<resultMap id="fmCommentenvelopechanceResultMap" type="com.jzhl.kfsq.entity.fm.CommentEnvelopeChance">
+		<id property="chanceId" column="chanceId" />
+		<result property="branchId" column="branchId" />
+		<result property="beginTime" column="beginTime" />
+		<result property="endTime" column="endTime" />
+		<result property="price" column="price" />
+		<result property="chance" column="chance" />
+		<result property="createUserId" column="createUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="fmCommentenvelopechanceResultMap"></resultMap>
+
+    <!-- 新增评论红包规则 -->
+	<insert id="insertCommentEnvelopeChance" parameterType="com.jzhl.kfsq.entity.fm.CommentEnvelopeChance">
+	   insert into FM_CommentEnvelopeChance (
+	     <if test="branchId != null">
+			branchId,
+		 </if>
+	     <if test="beginTime != null">
+			beginTime,
+		 </if>
+	     <if test="endTime != null">
+			endTime,
+		 </if>
+		 <if test="price != null">
+			price,
+		 </if>
+		 <if test="chance != null">
+			chance,
+		 </if>
+		 <if test="createUserId != null">
+			createUserId,
+		 </if>
+	     createTime,
+	     <if test="updateUserId != null">
+			updateUserId,
+		 </if>
+		 <if test="updateTime != null">
+			updateTime,
+		 </if>
+	     isValid
+	   )values (
+	     <if test="branchId != null">
+			#{branchId},
+		 </if>
+		 <if test="beginTime != null">
+			#{beginTime},
+		 </if>
+		 <if test="endTime != null">
+			#{endTime},
+		 </if>
+		 <if test="price != null">
+			#{price},
+		 </if>
+		 <if test="chance != null">
+			#{chance},
+		 </if>
+		 <if test="createUserId != null">
+			#{createUserId},
+		 </if>
+	     now(),
+	     <if test="updateUserId != null">
+			#{updateUserId},
+		 </if>
+		 <if test="updateTime != null">
+			#{updateTime},
+		 </if>
+	     1
+	   )
+	</insert>
+	
+    <!-- 编辑评论红包规则 -->
+	<update id="updateCommentEnvelopeChance" parameterType="com.jzhl.kfsq.entity.fm.CommentEnvelopeChance">
+	   update FM_CommentEnvelopeChance set
+	     <if test="branchId != null">
+			branchId=#{branchId},
+		 </if>
+		 <if test="beginTime != null">
+			beginTime=#{beginTime},
+		 </if>
+		 <if test="endTime != null">
+			endTime=#{endTime},
+		 </if>
+		 <if test="price != null">
+			price=#{price},
+		 </if>
+		 <if test="chance != null">
+			chance=#{chance},
+		 </if>
+		 <if test="createUserId != null">
+			createUserId=#{createUserId},
+		 </if>
+	     <if test="createTime != null">
+			createTime=#{createTime},
+		 </if>
+	     <if test="updateUserId != null">
+			updateUserId=#{updateUserId},
+		 </if>
+	     <if test="isValid != null">
+			isValid=#{isValid}
+		 </if>
+		 updateTime=now()
+	   <where>
+	   	 <if test="chanceId != null">
+		    chanceId=#{chanceId} 
+		 </if>
+	     <if test="branchId != null">
+		    and branchId=#{branchId} 
+		 </if>
+	   </where> 
+	</update>
+
+    <!-- 评论红包规则列表 -->
+	<select id="findCommentEnvelopeChanceList" parameterType="com.jzhl.kfsq.entity.fm.CommentEnvelopeChance" resultMap="findResultMap">
+	   select 
+	     chanceId,
+	     branchId,
+	     beginTime,
+	     endTime,
+	     price,
+	     chance,
+	     createUserId,
+	     createTime,
+	     updateUserId,
+	     updateTime,
+	     isValid
+	   from FM_CommentEnvelopeChance
+	   <where>
+	     <if test="chanceId != null">
+	        chanceId=#{chanceId}
+	     </if>
+	     <if test="branchId != null">
+	        and branchId=#{branchId}
+	     </if>
+	     <if test="beginTime != null">
+	        <![CDATA[and beginTime>=#{beginTime}]]>
+	     </if>
+	     <if test="endTime != null">
+	        <![CDATA[and endTime<=#{endTime}]]>
+	     </if>
+	     <if test="price != null">
+	        and price=#{price}
+	     </if>
+	     <if test="chance != null">
+	        and chance=#{chance}
+	     </if>
+	     <if test="createUserId != null">
+	        and createUserId=#{createUserId}
+	     </if>
+	     <if test="createTime != null">
+	        and createTime=#{createTime}
+	     </if>
+	     <if test="updateUserId != null">
+	        and updateUserId=#{updateUserId}
+	     </if>
+	     <if test="updateTime != null">
+	        and updateTime=#{updateTime}
+	     </if>
+	     <if test="isValid != null">
+	        and isValid=#{isValid}
+	     </if>
+	   </where>
+	   order by price desc
+	</select>
+	
+</mapper>

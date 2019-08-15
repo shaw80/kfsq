@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.pm.IPlanDtoMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.pm.PlanQueryDataSet" id="baseResultMap">
+		<result property="buildingId" column="buildingId" />
+		<result property="planId" column="planId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="longitude" column="longitude" />
+		<result property="latitude" column="latitude" />
+		<result property="averagePrice" column="averagePrice" />
+		<result property="buildingPhone" column="buildingPhone" />
+		<result property="position" column="position" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="appointmentTime" column="appointmentTime" />
+		<result property="banner" column="banner" />
+		<result property="status" column="status" />
+		<result property="scancodePrice" column="scancodePrice" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.pm.MemberPlanDataSet" id="memberPlanResultMap">
+		<result property="clientName" column="clientName" />
+		<result property="clientPhone" column="clientPhone" />
+		<result property="clientHeaderImg" column="clientHeaderImg" />
+		<result property="planId" column="planId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="applyTime" column="applyTime" />
+		<result property="visitTime" column="visitTime" />
+		<result property="planStatus" column="planStatus" />
+		<result property="scancodePrice" column="scancodePrice" />
+		<result property="clientSex" column="clientSex" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		bmb.buildingId, 
+		pp.planId, 
+		bmb.buildingName, 
+		bmb.longitude, 
+		bmb.latitude, 
+		bmb.averagePrice, 
+		pp.status, 
+		bmb.address, 
+		bmb.phone as buildingPhone, 
+		bmb.position, 
+		bmb.banner, 
+		date_format(pp.createTime , '%Y-%m-%d') as createTime, 
+		ifnull((
+			select max(date_format(pmsc.updateTime, '%Y-%m-%d')) 
+			from PM_SalerCustomer pmsc
+			where pmsc.buildingId = bmb.buildingId
+			and pmsc.memberId = pp.creatorUserId
+			and pmsc.isValid = 1
+		), date_format(pp.appointmentTime, '%Y-%m-%d')) as appointmentTime,
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer 
+			where smer.buildingId = bmb.buildingId
+			and smer.isValid = 1 limit 0, 1
+		), 0) as scancodePrice
+	</sql>
+	
+	<sql id="memberPlanColumns">
+		mmm.nickName as clientName, 
+		mmm.phone as clientPhone, 
+		mmm.headPortrait as clientHeaderImg,
+		pmp.planId as planId,
+		bmb.buildingName as buildingName,
+		DATE_FORMAT(pmp.appointmentTime, '%Y-%m-%d') as applyTime,
+		(
+			select max(date_format(pmsc.updateTime, '%m-%d %H:%i')) 
+			from PM_SalerCustomer pmsc
+			where pmsc.buildingId = bmb.buildingId
+			and pmsc.memberId = pmp.creatorUserId
+			and pmsc.isValid = 1
+		) as visitTime,
+		pmp.status as planStatus,
+		ifnull((
+			select smer.scancodePrice as scancodePrice
+			from SM_EnvelopeRule smer 
+			where smer.buildingId = bmb.buildingId 
+			and smer.isValid = 1 limit 0, 1
+		), 0) as scancodePrice,
+		mmm.sex as clientSex
+	</sql>
+	
+	<select id="findPlans" parameterType="com.jzhl.kfsq.dto.pm.PlanQueryDto" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from BM_Building bmb, PM_Plan pp
+		where 
+		bmb.buildingId=pp.buildingId 
+		and pp.isValid=1 
+		and bmb.isValid=1 
+		<if test="flag != null and flag == 1">
+			and (pp.status = 1 or pp.status = 2)
+		</if>
+		<if test="buildingId != null">
+			and bmb.buildingId = #{buildingId}
+		</if>
+		and pp.creatorUserId = #{creatorUserId}
+		order by appointmentTime desc;
+	</select>
+	
+	<!-- 需求已更改，重构逻辑，作废 
+	<select id="getMemberPlan" parameterType="com.jzhl.kfsq.dto.pm.MemberPlanDto" resultMap="memberPlanResultMap">
+		select 
+		<include refid="memberPlanColumns"/>
+		from MM_Member mmm, PM_Plan pmp, BM_Building bmb
+		where pmp.buildingId = bmb.buildingId
+		and mmm.memberId = pmp.creatorUserId
+		and mmm.isValid = 1 
+		and bmb.isValid = 1 
+		and pmp.isValid = 1
+		and mmm.account = #{clientPhone}
+		and bmb.buildingId = #{buildingId}
+	</select>
+	-->
+	
+	<!-- 根据电话查询会员信息 -->
+	<select id="getMemberByPhone" parameterType="com.jzhl.kfsq.dto.pm.MemberPlanDto" resultMap="memberPlanResultMap">
+		SELECT
+			sex as clientSex,
+			nickName as clientName,
+			headPortrait clientHeaderImg,
+			phone as clientPhone
+		FROM
+			MM_Member
+		WHERE
+			phone = #{clientPhone}
+	</select>
+	
+	<!-- 根据会员编号查询想看列表 -->
+	<select id="wantPlan" parameterType="com.jzhl.kfsq.dto.pm.PlanV2Dto" resultType="com.jzhl.kfsq.dataset.pm.PlanV2DataSet">
+		SELECT
+		  b.buildingId buildingId,
+		  b.banner banner,
+		  b.buildingName buildingName,
+		  b.averagePrice averagePrice,
+		  b.address address,
+		  DATE_FORMAT(p.appointmentTime, '%Y-%m-%d') appointmentTime,
+		  p.createTime createTime,
+		  p.status planStatus
+		FROM
+		  PM_Plan p,
+		  BM_Building b
+		WHERE
+			p.creatorUserId = #{memberId}
+		AND 
+		  p.isValid = 1
+		AND p.status = '0'
+		AND p.buildingId = b.buildingId
+		ORDER BY
+		  p.appointmentTime ASC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 根据会员编号查询想看列表 -->
+	<select id="countWantPlan" parameterType="com.jzhl.kfsq.dto.pm.PlanV2Dto" resultType="Integer">
+		SELECT 
+			COUNT(result.buildingId)
+		FROM
+		(
+			SELECT
+			  b.buildingId buildingId,
+			  b.banner banner,
+			  b.buildingName buildingName,
+			  b.averagePrice averagePrice,
+			  b.address address,
+			  DATE_FORMAT(p.appointmentTime, '%Y-%m-%d') appointmentTime,
+		  	  p.createTime createTime,
+			  p.status planStatus
+			FROM
+			  PM_Plan p,
+			  BM_Building b
+			WHERE
+				p.creatorUserId = #{memberId}
+			AND 
+			  p.isValid = 1
+			AND p.status = '0'
+			AND p.buildingId = b.buildingId
+			ORDER BY
+			  p.appointmentTime DESC
+		  ) result
+	</select>
+	
+	<!-- 根据会员编号查询已看列表 -->
+	<select id="alreadyPlan" parameterType="com.jzhl.kfsq.dto.pm.PlanV2Dto" resultType="com.jzhl.kfsq.dataset.pm.PlanV2DataSet">
+		SELECT
+		  b.buildingId buildingId,
+		  b.banner banner,
+		  b.buildingName buildingName,
+		  b.averagePrice averagePrice,
+		  b.address address,
+		  DATE_FORMAT(p.appointmentTime, '%Y-%m-%d') appointmentTime,
+		  p.createTime createTime,
+		  p.status planStatus
+		FROM
+		  PM_Plan p,
+		  BM_Building b
+		WHERE
+			p.creatorUserId = #{memberId}
+		AND 
+		  p.isValid = 1
+		AND p.status != '0'
+		AND p.buildingId = b.buildingId
+		ORDER BY
+		  p.appointmentTime DESC
+		LIMIT #{rowStart}, #{offset}
+	</select>
+	
+	<!-- 根据会员编号查询已看列表 -->
+	<select id="countAlreadyPlan" parameterType="com.jzhl.kfsq.dto.pm.PlanV2Dto" resultType="Integer">
+		SELECT 
+			COUNT(result.buildingId)
+		FROM
+		(
+			SELECT
+			  b.buildingId buildingId,
+			  b.banner banner,
+			  b.buildingName buildingName,
+			  b.averagePrice averagePrice,
+			  b.address address,
+			  DATE_FORMAT(p.appointmentTime, '%Y-%m-%d') appointmentTime,
+		      p.createTime createTime,
+			  p.status planStatus
+			FROM
+			  PM_Plan p,
+			  BM_Building b
+			WHERE
+				p.creatorUserId = #{memberId}
+			AND 
+			  p.isValid = 1
+			AND p.status != '0'
+			AND p.buildingId = b.buildingId
+			ORDER BY
+			  p.appointmentTime DESC
+		  ) result
+	</select>
+	
+	<!-- 根据楼盘编号统计楼盘评论总数 -->
+	<select id="countBuildingComment" parameterType="Integer" resultType="Integer">
+		SELECT
+			COUNT(commentId)
+		FROM
+			CM_BuildingComment
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+		AND parentCommentId = 0
+		AND auditStatus = 1
+	</select>
+	
+</mapper>

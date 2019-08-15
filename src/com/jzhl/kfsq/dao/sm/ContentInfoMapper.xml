@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IContentInfoMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.ContentInfo" id="baseResultMap">
+		<id property="contentId" column="contentId" />
+		<result property="contentType" column="contentType" />
+		<result property="contentTypeName" column="contentTypeName" />
+		<result property="contentKey" column="contentKey" />
+		<result property="contentValue" column="contentValue" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		contentId,
+		contentType,
+		contentTypeName,
+		contentKey,
+		contentValue,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime,
+		isValid
+	</sql>
+	
+	<sql id="tableName">
+        SM_ContentInfo
+    </sql>
+	
+	<!-- 添加内容信息 -->
+	<insert id="insertContentInfo" parameterType="com.jzhl.kfsq.entity.sm.ContentInfo">
+		insert into 
+		<include refid="tableName" />
+		(
+			contentType,
+			contentTypeName,
+			contentKey,
+			contentValue,
+			creatorUserId,
+			createTime,
+			isValid
+		)
+		values
+		(
+			#{contentType},
+			#{contentTypeName},
+			#{contentKey},
+			#{contentValue},
+			#{creatorUserId},
+			now(),
+			1
+		)
+	</insert>
+	
+	<!-- 删除内容信息 -->
+	<update id="deleteContentInfo" parameterType="int">
+		update 
+		<include refid="tableName" /> 
+		set 
+		isValid = 0 
+		where 
+		contentId = #{contentId}
+	</update>
+	
+	<!-- 更新内容信息 -->
+	<update id="updateContentInfo" parameterType="com.jzhl.kfsq.entity.sm.ContentInfo">
+		update 
+		<include refid="tableName" /> 
+		set
+			updateTime = now()
+		<if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		</if>
+		<if test="contentType != null">
+			,contentType = #{contentType}
+		</if>
+		<if test="contentTypeName != null">
+			,contentTypeName = #{contentTypeName}
+		</if>
+		<if test="contentKey != null">
+			,contentKey = #{contentKey}
+		</if>
+		<if test="contentValue != null">
+			,contentValue = #{contentValue}
+		</if>
+		<if test="isValid != null">
+			,isValid = #{isValid}
+		</if>
+		<where>
+			<if test="contentId != null">
+				contentId = #{contentId}
+			</if>
+			<if test="contentType != null">
+				and contentType = #{contentType}
+			</if>
+			<if test="contentKey != null">
+				and contentKey = #{contentKey}
+			</if>
+		</where>
+	</update>
+	
+	<!-- 根据内容编号查询内容信息 -->
+	<select id="getContentInfo" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		contentId = #{contentId}
+		and
+		isValid = 1
+	</select>
+	
+	<!-- 根据内容类型查询内容信息列表 -->
+	<select id="findContentInfoByContentType" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		contentType = #{contentType}
+		and
+		isValid = 1
+	</select>
+	
+	<!-- 查看文本内容信息表信息 -->
+	<select id="getContentInfoByObj" parameterType="com.jzhl.kfsq.entity.sm.ContentInfo" resultType="com.jzhl.kfsq.entity.sm.ContentInfo">
+		select * from SM_ContentInfo
+		<where>
+			<if test="contentType != null">
+				contentType = #{contentType}
+			</if>
+			<if test="contentKey != null">
+				and contentKey = #{contentKey}
+			</if>
+		</where>
+	</select>
+
+</mapper>

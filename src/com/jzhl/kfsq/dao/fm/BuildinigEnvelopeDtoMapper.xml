@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IBuildinigEnvelopeDtoMapper">
+
+	<select id="getBuildingEnvelopeBalance" parameterType="com.jzhl.kfsq.dto.fm.BuildingEnvelopeBalanceDto" resultType="java.math.BigDecimal">
+		select 
+		ifnull((
+			select  sum(fmer.totalSum) 
+			from FM_EnvelopeRecharge fmer 
+			where fmer.isValid = 1 
+			<if test="buildingId != null">
+				and fmer.buildingId = #{buildingId}
+			</if>
+			<if test="userId != null">
+				and fmer.buildingId = (
+					select smub.buildingId 
+					from SM_UserBuilding smub
+					where smub.userId = #{userId}
+				)
+			</if>
+		),0)
+		-
+		ifnull((
+			select sum(fmra.price) 
+			from FM_RedemptionApplication fmra 
+			where fmra.isValid = 1 
+			and fmra.status = 2 
+			<if test="buildingId != null">
+				and fmra.buildingId = #{buildingId}
+			</if>
+			<if test="userId != null">
+				and fmra.buildingId = (
+					select smub.buildingId 
+					from SM_UserBuilding smub
+					where smub.userId = #{userId}
+				)
+			</if>
+		),0)
+		-
+		ifnull((
+			select sum(fmec.price) from FM_EnvelopeCash fmec
+			where fmec.receiveId in(
+				select fmerece.receiveId from FM_EnvelopeReceive fmerece
+				where fmerece.envelopeId in (
+					select fmerech.envelopeId from  FM_EnvelopeRecharge fmerech
+					where fmerech.isValid = 1
+					<if test="buildingId != null">
+						and fmerech.buildingId = #{buildingId}
+					</if>
+					<!-- 置业顾问 -->
+					<if test="userId != null">
+						and fmerech.buildingId = (
+							select smub.buildingId 
+							from SM_UserBuilding smub
+							where smub.userId = #{userId}
+						)
+					</if>
+				)
+				and fmerece.isValid= 1 and (fmerece.status = 2 or fmerece.status = 3)
+			)
+			and fmec.isValid= 1
+		),0)
+	</select>
+	
+	
+	<select id="getSalerTotalRed" parameterType="com.jzhl.kfsq.dto.fm.SalerTotalRedDto" resultType="BigDecimal">
+		select ifnull(SUM(fmec.price), 0) from FM_EnvelopeCash fmec
+		where 
+		fmec.receiveId in (
+			select fmerece.receiveId
+			from FM_EnvelopeReceive fmerece
+			where fmerece.isValid = 1 
+			and fmerece.status = 2
+			and fmerece.envelopeId in (
+				select fmerech.envelopeId
+				from FM_EnvelopeRecharge fmerech
+				where fmerech.buildingId in (
+					select smub.buildingId 
+					from SM_UserBuilding smub
+					where 
+					<!-- 置业顾问 -->
+					<if test="appUserType != null and appUserType==2">
+						smub.userId = #{userId}
+					</if>
+					<!-- 销售总监-->
+					<if test="appUserType != null and appUserType==0">
+						smub.userId in 
+						(
+							select su2.userId from SM_User su2
+							where su2.appUserType = 2
+							and su2.userType = 1
+							and su2.isValid = 1
+							and su2.leaderUserId in
+							(
+								select su1.userId from SM_User su1
+								where su1.appUserType = 1
+								and su1.userType = 1
+								and su1.leaderUserId = #{userId}
+								and su1.isValid = 1
+							)
+						)
+					</if>
+				)
+				and fmerech.isValid = 1
+			)
+			and fmerece.memberId in (
+				select pmsc.memberId 
+				from PM_SalerCustomer pmsc
+				where
+				<!-- 置业顾问 -->
+				<if test="appUserType != null and appUserType==2">
+					pmsc.userId = #{userId}
+				</if>
+				<!-- 销售总监-->
+				<if test="appUserType != null and appUserType==0">
+					pmsc.userId in 
+					(
+						select su2.userId from SM_User su2
+						where su2.appUserType = 2
+						and su2.userType = 1
+						and su2.isValid = 1
+						and su2.leaderUserId in
+						(
+							select su1.userId from SM_User su1
+							where su1.appUserType = 1
+							and su1.userType = 1
+							and su1.leaderUserId = #{userId}
+							and su1.isValid = 1
+						)
+					)
+				</if>
+			) 
+		)
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(fmec.createTime,'%Y-%m-%d') >= #{beginDate} ]]>
+		</if>
+		<if test="beginDate != null and beginDate != ''">
+			<![CDATA[ and date_format(fmec.createTime,'%Y-%m-%d') <= #{endDate} ]]>
+		</if>
+	</select>
+	
+</mapper> 

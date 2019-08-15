@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IAroundMapper">
+	
+	<select id="getAroundDataSet" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.AroundDataSet">
+		SELECT
+			(
+				SELECT
+		    	COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND (type = 1 OR type = 2 OR type = 3)
+				AND distance &lt;= 2000
+			) countHealthCare,
+			(
+				SELECT
+					COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND type = 4
+				AND distance &lt;= 2000
+			) countBank,
+			(
+				SELECT
+					COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND type = 5
+				AND distance &lt;= 2000
+			) countEntertainment,
+			(
+				SELECT
+					COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND type = 6
+				AND distance &lt;= 2000
+			) countBusiness,
+			(
+				SELECT
+					COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND type = 7
+				AND distance &lt;= 2000
+			) countSurroundingEnvironment,
+			(
+				SELECT
+					COUNT(aroundId)
+				FROM
+					BM_Around
+				WHERE
+					buildingId = #{buildingId}
+				AND isValid = 1
+				AND type = 8
+				AND distance &lt;= 2000
+			) countUnfavorableFactors
+	</select>
+	
+	<!-- 根据楼盘编号统计园区配套数量 -->
+	<select id="countParkFacilitiesByBuildingId" parameterType="map" resultType="int">
+		SELECT
+			COUNT(A.aroundId)
+		FROM
+			BM_Around A
+		WHERE
+			buildingId = #{buildingId}
+		AND A.distance &lt;= 2000
+		AND A.isValid = 1
+		AND EXISTS (
+			SELECT
+				1
+			FROM
+				BM_AroundTag B
+			WHERE
+				A.aroundId = B.aroundId
+			AND B.isValid = 1
+			AND EXISTS (
+				SELECT
+					1
+				FROM
+					SM_Tag C
+				WHERE
+					B.tagId = C.tagId
+				AND C.tagType = 5
+				AND C.isScore = 1
+				AND C.isValid = 1
+			)
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和类型统计周边信息的个数-->
+	<select id="countAround" parameterType="map" resultType="int">
+		SELECT
+			COUNT(aroundId)
+		FROM
+			BM_Around
+		WHERE
+			buildingId = #{buildingId}
+		AND type = #{type}
+		AND isValid = 1
+		AND distance &lt;= 2000
+	</select>
+	
+</mapper> 

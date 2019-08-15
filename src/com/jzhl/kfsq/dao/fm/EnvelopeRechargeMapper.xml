@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IEnvelopeRechargeMapper">
+
+	<resultMap id="fmEnveloperechargeResultMap" type="com.jzhl.kfsq.entity.fm.EnvelopeRecharge">
+		<id property="envelopeId" column="envelopeId" />
+		<result property="ruleId" column="ruleId" />
+		<result property="investor" column="investor" />
+		<result property="developerId" column="developerId" />
+		<result property="branchId" column="branchId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="type" column="type" />
+		<result property="totalSum" column="totalSum" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="fmEnveloperechargeResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="fmEnveloperechargeResultMap"></resultMap>
+
+	<insert id="insertEnvelopeRecharge" parameterType="com.jzhl.kfsq.entity.fm.EnvelopeRecharge">
+	   insert into FM_EnvelopeRecharge (
+	   	<if test="ruleId != null">
+	    	 ruleId,
+		</if>
+	     investor,
+	    <if test="branchId != null">
+		     branchId,
+		</if>
+	    <if test="buildingId != null">
+		     buildingId,
+		</if>
+	     type,
+	     totalSum,
+	     creatorUserId,
+	     createTime,
+	     isValid
+	   )values (
+		 <if test="ruleId != null">
+		 	 #{ruleId},
+		 </if>
+	     	 #{investor},
+	     <if test="branchId != null">
+		     #{branchId},
+		 </if>
+	     <if test="buildingId != null">
+		     #{buildingId},
+		 </if>
+	     #{type},
+	     #{totalSum},
+	     #{creatorUserId},
+	     now(),
+	     #{isValid}
+	   )
+	</insert>
+	
+	<!-- 代理商旗下楼盘充值总数 -->
+	<select id="getBuildingRechargeCount" parameterType="map" resultType="Integer">
+	   select COUNT(buildingId) rechargeBuildingNum from 
+		(
+			select DISTINCT(t1.buildingId) from FM_EnvelopeRecharge t1 
+			where t1.type =0 and t1.isValid =1 and t1.buildingId in
+			(
+				select buildingId from BM_Building 
+
+				  where agentId in 
+				  (
+					  select userId from SM_User 
+					   <where>
+						   <if test="branchId != null">
+						   		branchId = #{branchId}
+						   </if>
+					   </where>
+				  )
+			)
+		 ) as table1
+	</select>
+	
+	<!-- 代理商旗下昨日楼盘充值总数 -->
+	<select id="getBuildingRechargeCountYesterday" parameterType="map" resultType="Integer">
+	   select COUNT(buildingId) rechargeBuildingNumYesterday from 
+		(
+			select DISTINCT(t1.buildingId) from FM_EnvelopeRecharge t1 
+			where t1.type =0 and t1.isValid =1 and t1.buildingId in
+			(
+				select buildingId from BM_Building 
+
+				  where agentId in 
+				  (
+					  select userId from SM_User 
+					   <where>
+						   <if test="branchId != null">
+						   		branchId = #{branchId}
+						   </if>
+					   </where>
+				  )
+			)
+			and TO_DAYS(NOW()) - TO_DAYS(t1.createTime) = 1
+		 ) as table1
+	</select>
+	
+	<!-- 算出总的代理商充值/楼盘金额-->
+	<select id="totalPrice" parameterType="map" resultType="Integer">
+	  select ifnull(sum(totalSum),0) from FM_EnvelopeRecharge 
+	  	where type = #{type} 
+	  		and branchId = #{branchId}
+	</select>
+	
+	<!-- 算出昨天代理商充值/楼盘金额-->
+	<select id="totalPriceYesterday" parameterType="map" resultType="Integer">
+	  select ifnull(sum(totalSum),0) from FM_EnvelopeRecharge 
+	  	where type = #{type} 
+	  		and branchId = #{branchId}
+	  		and TO_DAYS(NOW()) - TO_DAYS(createTime) = 1
+	</select>
+	
+	<!-- 算出楼盘已赎回成功的金额-->
+	<select id="totalRedemptionApplicationPrice" parameterType="map" resultType="Integer">
+	  select ifnull(sum(price),0) from FM_RedemptionApplication where status=2 and branchId = #{branchId}
+	</select>
+	
+	<!-- 算出评论红包消耗金额-->
+	<select id="totalEnvelopeUsePrice" parameterType="map" resultType="Integer">
+		select ifnull(sum(price),0) from FM_EnvelopeReceive where status = 2 and envelopeId in 
+			(
+				select envelopeId FROM FM_EnvelopeRecharge where type=1 and branchId = #{branchId}
+			)
+	</select>
+	
+	<!-- 根据代理商ID查询旗下已经充值的楼盘-->
+	<select id="getEnvelopeBuildingList" parameterType="map" resultType="com.jzhl.kfsq.entity.fm.EnvelopeRecharge">
+	    SELECT * from FM_EnvelopeRecharge where type = 0 and branchId = #{branchId} GROUP BY buildingId
+	</select>
+	
+	<!-- 根据楼盘编号计算楼盘充值余额-->
+	<select id="getBalance" parameterType="int" resultType="Integer">
+	    SELECT
+			(
+				IFNULL(
+					(
+						SELECT
+							SUM(totalSum)
+						FROM
+							FM_EnvelopeRecharge
+						WHERE
+							buildingId = #{buildingId}
+						AND isValid = 1
+					),
+					0
+				) - IFNULL(
+					(
+						SELECT
+							SUM(price)
+						FROM
+							FM_EnvelopeReceive
+						WHERE
+							buildingId = #{buildingId}
+						AND isValid = 1
+						AND envelopeType = 0
+					),
+					0
+				)
+			) balance
+	</select>
+	
+</mapper> 

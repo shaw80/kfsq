@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IAccountRechargeMapper">
+
+	<resultMap id="fmAccountrechargeResultMap" type="com.jzhl.kfsq.entity.fm.AccountRecharge">
+		<id property="rechargeId" column="rechargeId" />
+		<result property="rechargeWay" column="rechargeWay" />
+		<result property="rechargeType" column="rechargeType" />
+		<result property="receiveAccountId" column="receiveAccountId" />
+		<result property="payAccountId" column="payAccountId" />
+		<result property="price" column="price" />
+		<result property="status" column="status" />
+		<result property="serialNum" column="serialNum" />
+		<result property="failInfo" column="failInfo" />
+		<result property="contractNum" column="contractNum" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="payTime" column="payTime" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="fmAccountrechargeResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="fmAccountrechargeResultMap"></resultMap>
+
+	<insert id="insertAccountRecharge" parameterType="com.jzhl.kfsq.entity.fm.AccountRecharge">
+	   insert into FM_AccountRecharge (
+	     rechargeWay,
+	     rechargeType,
+	     receiveAccountId,
+	     payAccountId,
+	     price,
+	     status,
+	     isValid,
+	     creatorUserId,
+	     payTime
+	   )values (
+	     #{rechargeWay},
+	     #{rechargeType},
+	     #{receiveAccountId},
+	     #{payAccountId},
+	     #{price},
+	     1,
+	     1,
+	     #{creatorUserId},
+	     now()
+	   )
+	</insert>
+
+	<!-- 获取充值记录列表 -->
+	<select id="findAccountRechargeList" parameterType="map" resultType="com.jzhl.kfsq.entity.fm.AccountRecharge">
+	   SELECT t1.creatorUserId, t2.branchId, t1.rechargeId, t4.areaName, t3.comanyName, t3.leadName, t3.phone, t1.price, t1.payTime, t1.status
+		FROM FM_AccountRecharge t1
+		LEFT JOIN SM_User t2 on t1.creatorUserId = t2.userId
+		LEFT JOIN SM_Branch t3 on t2.branchId = t3.branchId
+		LEFT JOIN SM_ProvinceCity t4 on t3.branchCityId = t4.areaId
+		where t1.isValid=1 and t2.roleId =(SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0') and t1.status=1 and t1.rechargeType=0
+		<if test="keyword != null">
+	        and (t4.areaName like '%${keyword}%'
+	        or t3.comanyName like '%${keyword}%'
+	        or t3.leadName like '%${keyword}%'
+	        or t3.phone like '%${keyword}%')
+	    </if>
+	    <if test="dateFlag7d != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 7 DAY) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateFlag1m != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 1 MONTH) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateFlag3m != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 3 MONTH) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateStart != null and dateEnd != null">
+	       and t1.payTime between #{dateStart} and #{dateEnd}
+	    </if>
+	    order by t1.payTime desc
+	    <if test="isDownFlag == null">
+		    limit #{rowstart}, #{offset}
+	    </if>
+	</select>
+	
+	<!-- 获取充值记录列表总页数 -->
+	<select id="getAccountRechargeDataCount" parameterType="map" resultType="Integer">
+	  SELECT count(t1.rechargeId)
+		FROM FM_AccountRecharge t1
+		LEFT JOIN SM_User t2 on t1.creatorUserId = t2.userId
+		LEFT JOIN SM_Branch t3 on t2.branchId = t3.branchId
+		LEFT JOIN SM_ProvinceCity t4 on t3.branchCityId = t4.areaId
+		where t1.isValid=1 and t2.roleId =(SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0') and t1.status=1 and t1.rechargeType=0
+		<if test="keyword != null">
+	        and (t4.areaName like '%${keyword}%'
+	        or t3.comanyName like '%${keyword}%'
+	        or t3.leadName like '%${keyword}%'
+	        or t3.phone like '%${keyword}%')
+	    </if>
+	    <if test="dateFlag7d != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 7 DAY) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateFlag1m != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 1 MONTH) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateFlag3m != null">
+	       and <![CDATA[date_sub(curdate(), INTERVAL 3 MONTH) <= date(t1.payTime)]]>
+	    </if>
+	    <if test="dateStart != null and dateEnd != null">
+	       and t1.payTime between #{dateStart} and #{dateEnd}
+	    </if>
+	</select>
+	
+	<!-- 获取楼盘充值记录列表 -->
+	<select id="findAccountRechargeByBuildingList" parameterType="map" resultType="com.jzhl.kfsq.entity.fm.EnvelopeRecharge">
+	   select t1.envelopeId, t2.buildingId, t2.buildingName, t1.totalSum, 
+			(select t4.name from SM_UserBuilding t5 
+				LEFT JOIN SM_User t4 on t4.userId = t5.userId 
+			where t4.appUserType=0 and t5.buildingId = t1.buildingId) saleLeaderName,
+			(select t4.mobilePhone from SM_UserBuilding t5 
+				LEFT JOIN SM_User t4 on t4.userId = t5.userId 
+			where t4.appUserType=0 and t5.buildingId = t1.buildingId) saleLeaderPhone,
+			t1.createTime, t3.name proName, t1.isValid
+		from FM_EnvelopeRecharge t1
+			LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+			LEFT JOIN SM_User t3 on t1.creatorUserId = t3.userId 
+		where t1.type=0 
+		<if test="appUserType == 0">
+	       and t1.buildingId in 
+			(
+				select buildingId from SM_UserBuilding where userId = #{userId}
+			)
+	    </if>
+	    <if test="appUserType == null">
+	       and t1.buildingId in 
+			(
+				select buildingId from BM_Building where agentId = #{userId}
+			)
+	    </if>
+	    <if test="keyword != null">
+	        and (t2.buildingName like '%${keyword}%'
+	        or t1.totalSum like '%${keyword}%'
+	        or t3.name like '%${keyword}%')
+	     </if>
+		ORDER BY t1.createTime desc
+	    limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 获取楼盘充值记录列表总页数 -->
+	<select id="getAccountRechargeByBuildingDataCount" parameterType="map" resultType="Integer">
+	  select count(t1.envelopeId)
+		from FM_EnvelopeRecharge t1
+		   LEFT JOIN BM_Building t2 on t1.buildingId = t2.buildingId
+		   LEFT JOIN SM_User t3 on t1.creatorUserId = t3.userId 
+		where t1.type=0
+		<if test="appUserType == 0">
+	       and t1.buildingId in 
+			(
+				select buildingId from SM_UserBuilding where userId = #{userId}
+			)
+	    </if>
+	    <if test="appUserType == null">
+	       and t1.buildingId in 
+			(
+				select buildingId from BM_Building where agentId = #{userId}
+			)
+	    </if>
+	    <if test="keyword != null">
+	        and (t2.buildingName like '%${keyword}%'
+	        or t1.totalSum like '%${keyword}%'
+	        or t3.name like '%${keyword}%')
+	    </if>
+	</select>
+	
+</mapper> 

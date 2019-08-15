@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.cm.ICommentTypeMapper">
+
+	<resultMap id="cmcommentTypeResultMap" type="com.jzhl.kfsq.entity.cm.CommentType">
+		<id property="commentTypeId" column="commentTypeId" />
+		<result property="commentId" column="commentId" />
+		<result property="commentType" column="commentType" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	<resultMap id="findResultMap" type="java.util.HashMap" extends="cmcommentTypeResultMap"></resultMap>
+
+    <!-- 插入数据 -->
+	<insert id="saveCommentType" parameterType="com.jzhl.kfsq.entity.cm.CommentType">
+		insert into CM_CommentType (
+			commentId,
+			commentType,
+			creatorUserId,
+			createTime
+		)values (
+			#{commentId},
+			#{commentType},
+			#{creatorUserId},
+			now()
+		)
+	</insert>
+
+	<!-- 根据品论ID删除品论分类数据列表 -->
+	<delete id="deleteCommentTypeList" parameterType="map">
+		delete from
+			CM_CommentType
+		where
+			commentId=#{commentId}
+	</delete>
+
+	<!-- 根据commentId查询评论类型表 -->
+	<select id="findCommentTypeList" parameterType="map" resultType="com.jzhl.kfsq.entity.cm.CommentType">
+		SELECT * FROM CM_CommentType WHERE commentId = #{commentId}
+	</select>
+
+</mapper> 

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.fm.IPayInfoMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.fm.PayInfo" id="baseResultMap">
+		<id property="payInfoId" column="payInfoId" />
+		<result property="serialNum" column="serialNum" />
+		<result property="countPerson" column="countPerson" />
+		<result property="payStatus" column="payStatus" />
+		<result property="failReason" column="failReason" />
+		<result property="payPrice" column="payPrice" />
+		<result property="managePrice" column="managePrice" />
+		<result property="createUserId" column="createUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<resultMap type="com.jzhl.kfsq.dataset.mm.MemberBillingDataSet" id="memberResultMap">
+		<result property="regTime" column="regTime" />
+		<result property="cityName" column="cityName" />
+		<result property="nickName" column="nickName" />
+		<result property="phone" column="phone" />
+		<result property="price" column="price" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		payInfoId,
+		serialNum,
+		countPerson,
+		payStatus,
+		failReason,
+		payPrice,
+		managePrice,
+		createUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        FM_PayInfo
+    </sql>
+	
+	<!-- 根据代理商编号分页查询支付记录 -->
+	<select id="findPayInfoByUserId" parameterType="com.jzhl.kfsq.dto.fm.PayParamDto" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />
+		FROM <include refid="tableName" />
+		WHERE createUserId = #{userId}
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ AND DATE_FORMAT(createTime, '%Y-%m-%d') >= DATE_FORMAT(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ AND DATE_FORMAT(createTime, '%Y-%m-%d') <= DATE_FORMAT(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+		ORDER BY createTime DESC
+		<if test="isDownFlag == null">
+			LIMIT #{rowStart}, #{offset}
+		</if>
+	</select>
+	
+	<!-- 根据代理商编号统计支付信息数据量 -->
+	<select id="countPayInfoByUserId" parameterType="com.jzhl.kfsq.dto.fm.PayParamDto" resultType="Integer">
+		SELECT count(payInfoId)
+		FROM <include refid="tableName" />
+		WHERE createUserId = #{userId}
+		<if test="beginTime != null and beginTime != ''">
+			<![CDATA[ AND DATE_FORMAT(createTime, '%Y-%m-%d') >= DATE_FORMAT(#{beginTime}, '%Y-%m-%d') ]]>
+		</if> 
+		<if test="endTime != null and endTime != ''">
+			<![CDATA[ AND DATE_FORMAT(createTime, '%Y-%m-%d') <= DATE_FORMAT(#{endTime}, '%Y-%m-%d') ]]>
+		</if> 
+	</select>
+	
+	<!-- 根据流水号获取支付信息 -->
+	<select id="getPayInfoBySerNum" parameterType="String" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" />
+		FROM <include refid="tableName" />
+		WHERE serialNum = #{serialNum}
+	</select>
+	
+	<!-- 根据流水号查询批量支付给哪些用户 -->
+	<select id="findMemberBySerNum" parameterType="map" resultMap="memberResultMap">
+		SELECT
+			DATE_FORMAT(m.createTime, '%Y-%m-%d') regTime,
+			pc.areaName cityName,
+			m.nickName nickName,
+			m.phone phone,
+			c.price price
+		FROM
+			MM_Member m,
+			SM_ProvinceCity pc,
+			FM_CashApplication c
+		WHERE
+			memberId IN (
+				SELECT
+					applicationPersonId
+				FROM
+					FM_CashApplication
+				WHERE
+					serialNum = #{serialNum}
+				GROUP BY
+					applicationPersonId
+			)
+		AND m.cityId = pc.areaId
+		AND m.isValid = 1
+		AND pc.isValid = 1
+		AND c.applicationPersonId = m.memberId
+		AND c.status = 2
+		ORDER BY
+			m.createTime DESC
+		<if test="isDownFlag == null">
+			LIMIT #{begin}, #{length}
+		</if>
+	</select>
+	
+	<!-- 根据流水号统计批量支付给多少用户 -->
+	<select id="countMemberBySerNum" parameterType="String" resultType="Integer">
+	    SELECT
+			COUNT(m.memberId)
+		FROM
+			MM_Member m,
+			SM_ProvinceCity pc,
+			FM_CashApplication c
+		WHERE
+			memberId IN (
+				SELECT
+					applicationPersonId
+				FROM
+					FM_CashApplication
+				WHERE
+					serialNum = #{serialNum}
+				GROUP BY
+					applicationPersonId
+			)
+		AND m.cityId = pc.areaId
+		AND m.isValid = 1
+		AND pc.isValid = 1
+		AND c.applicationPersonId = m.memberId
+		AND c.status = 2
+	</select>
+	
+</mapper>

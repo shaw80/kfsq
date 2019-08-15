@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"   
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+       xmlns:context="http://www.springframework.org/schema/context"   
+       xmlns:mvc="http://www.springframework.org/schema/mvc" 
+       xmlns:task="http://www.springframework.org/schema/task"         
+       xsi:schemaLocation="http://www.springframework.org/schema/mvc   
+       					   http://www.springframework.org/schema/mvc/spring-mvc-4.1.xsd  
+          				   http://www.springframework.org/schema/beans   
+                		   http://www.springframework.org/schema/beans/spring-beans-4.1.xsd  
+        				   http://www.springframework.org/schema/context   
+                		   http://www.springframework.org/schema/context/spring-context-4.1.xsd
+                		   http://www.springframework.org/schema/task 
+                		   http://www.springframework.org/schema/task/spring-task-4.1.xsd">  
+      
+    <description>Spring MVC Configuration</description>  
+      
+    <!-- 对静态资源文件的访问，交给default servlet handler处理 -->  
+    <mvc:default-servlet-handler/>  
+      
+    <!-- 启用spring mvc 注解 -->  
+    <context:annotation-config />  
+      
+    <!-- 默认的注解映射的支持 -->  
+    <mvc:annotation-driven />  
+      
+    <!-- 设置使用注解的类所在的jar包 -->  
+    <context:component-scan base-package="com.jzhl"></context:component-scan>
+    
+    <!-- 自动扫描bean，把作了注解的类转换为bean -->
+    <context:component-scan base-package="com.jzhl.kfsq.controller">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+		<context:include-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+	</context:component-scan>  
+      
+    <!-- 完成请求和注解entity的映射 -->  
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter"/>  
+      
+    <!-- JSP视图文件解析配置 -->  
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">  
+	    <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>  
+	    <property name="prefix" value="/WEB-INF/jsp/"/>  
+	    <property name="suffix" value=".jsp"/>  
+	    <property name="viewNames" value="jsp/*"/>  
+	    <property name="order" value="1"/>  
+	</bean>  
+      
+	<bean class="org.springframework.web.servlet.view.UrlBasedViewResolver">  
+	    <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>  
+	    <property name="prefix" value="/WEB-INF/jsp/"/>  
+	    <property name="suffix" value=".jsp"/>  
+	    <property name="order" value="2"/>  
+	</bean>  
+  
+    <!-- 上传文件拦截，设置最大上传文件大小 20M=20*1024*1024(B)=20971520 bytes -->    
+    <bean id="multipartResolver"   
+          class="org.springframework.web.multipart.commons.CommonsMultipartResolver">    
+        <!-- one of the properties available; the maximum file size in bytes -->  
+        <property name="maxUploadSize">  
+            <value>20971520</value>  
+        </property>  
+    </bean>
+    
+    <!-- 定时任务扫描 -->
+    <task:executor id="executor" pool-size="5" />
+    <task:scheduler id="scheduler" pool-size="10" />
+    <task:annotation-driven executor="executor" scheduler="scheduler" /> 
+    
+    <!-- 统一异常处理 -->
+    <bean id="handlerExceptionResolver" class="com.jzhl.kfsq.common.exception.JZExceptionHandler">
+        <property name="defaultErrorView" value="error"/>
+    </bean>     
+    
+    <!-- 处理responseBody 里面日期类型 -->
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<bean
+				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="objectMapper">
+					<bean class="com.fasterxml.jackson.databind.ObjectMapper">
+						<property name="dateFormat">
+							<bean class="java.text.SimpleDateFormat">
+								<constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss" />
+							</bean>
+						</property>
+					</bean>
+				</property>
+				<property name="supportedMediaTypes">
+					<list>
+						<value>text/html;charset=UTF-8</value>
+						<value>application/json;charset=UTF-8</value>
+					</list>
+				</property>
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+    <!-- 加载redis配置文件 -->
+    <context:property-placeholder location="classpath:redis.properties"/>   
+    <!-- redis连接池的配置 -->
+    <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxTotal" value="${redis.pool.maxTotal}"/>  
+        <property name="maxIdle" value="${redis.pool.maxIdle}"/>
+        <property name="minIdle" value="${redis.pool.minIdle}"/>
+        <property name="maxWaitMillis" value="${redis.pool.maxWaitMillis}"/>
+        <property name="testOnBorrow" value="${redis.pool.testOnBorrow}"/>
+        <property name="testOnReturn" value="${redis.pool.testOnReturn}"/>
+    </bean>
+    <!-- redis的连接池pool，不是必选项：timeout/password  -->
+    <bean id="jedisPool" class="redis.clients.jedis.JedisPool">
+        <constructor-arg index="0" ref="jedisPoolConfig"/>
+        <constructor-arg index="1" value="${redis.ip}"/>
+        <constructor-arg index="2" value="${redis.port}" type="int"/>
+        <constructor-arg index="3" value="${redis.timeout}" type="int"/>
+        <constructor-arg index="4" value="${redis.password}"/>
+    </bean>	
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+        <constructor-arg index="0" ref="jedisPoolConfig"/>
+        <property name="hostName" value="${redis.ip}"/>
+        <property name="port" value="${redis.port}"/>
+        <property name="timeout" value="${redis.timeout}"/>
+        <property name="password" value="${redis.password}"/>  
+    </bean>     
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"/>
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"></bean>
+        </property>  
+    </bean>
+    <!-- Redis分片存储，暂时未使用
+    <bean id = "shardedJedisPool" class = "redis.clients.jedis.ShardedJedisPool">  
+        <constructor-arg index="0" ref="jedisPoolConfig"/>  
+        <constructor-arg index="1">  
+            <list>  
+                <bean class="redis.clients.jedis.JedisShardInfo">  
+                    <constructor-arg index="0" value="${redis.host}"/>         
+                    <constructor-arg index="1" value="${redis.port}" type="int"/>  
+                    <constructor-arg index="2" value="${redis.timeout}" type="int"/>  
+                    <property name="password" value="${redis.password}"/>  
+                </bean>  
+                <bean class="redis.clients.jedis.JedisShardInfo">  
+                    <constructor-arg index="0" value="${redis.host2}"/>         
+                    <constructor-arg index="1" value="${redis.port}" type="int"/>  
+                    <constructor-arg index="2" value="${redis.timeout}" type="int"/>  
+                    <property name="password" value="${redis.password}"/>  
+                </bean>  
+            </list>             
+        </constructor-arg>  
+    </bean>
+    -->       	  
+</beans>

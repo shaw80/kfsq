@@ -1,0 +1,1569 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.ba.IDimensionMapper">
+
+	<select id="getDimension">
+	</select>
+
+	<!-- 根据维度代码和城市编号查询维度信息，查询一级维度 -->
+	<select id="getDimensionByDimensionCodeAndCityId" parameterType="map"
+		resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT
+		*
+		FROM
+		BA_Dimension
+		WHERE
+		dimensionCode = #{dimensionCode}
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND dimensionType = 1
+	</select>
+
+	<!-- 根据楼盘编号、维度代码和城市编号查询维度信息，其他标签数量对应的维度 -->
+	<select id="getDimensionByCodeAndCityIdAndSize" parameterType="map"
+		resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT
+			*
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = #{dimensionCode}
+		AND dimensionType = 1
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= #{size}
+		AND endValue &gt;= #{size}
+	</select>
+	
+	<!-- 根据开发商排名查询维度信息 -->
+	<select id="getDimensionByDevelopers" parameterType="string"
+		resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT
+			*
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'developers'
+		AND <![CDATA[ beginValue <= (
+			IFNULL(
+				(
+					SELECT
+						ranking
+					FROM
+						SM_Dictionary
+					WHERE
+						type = 1
+					AND name = #{name}
+					AND isValid = 1
+				),
+				51
+			)
+		) ]]>
+		AND <![CDATA[ endValue >= (
+			IFNULL(
+				(
+					SELECT
+						ranking
+					FROM
+						SM_Dictionary
+					WHERE
+						type = 1
+					AND name = #{name}
+					AND isValid = 1
+				),
+				1000
+			)
+		) ]]>
+		AND isValid = 1
+		AND dimensionType = 1
+	</select>
+	
+	<!-- 根据物业排名查询维度信息 -->
+	<select id="getDimensionByProperty" parameterType="string"
+		resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT
+			*
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'property'
+		AND <![CDATA[ beginValue <= (
+			IFNULL(
+				(
+					SELECT
+						ranking
+					FROM
+						SM_Dictionary
+					WHERE
+						type = 2
+					AND name = #{name}
+					AND isValid = 1
+				),
+				51
+			)
+		) ]]>
+		AND <![CDATA[ endValue >= (
+			IFNULL(
+				(
+					SELECT
+						ranking
+					FROM
+						SM_Dictionary
+					WHERE
+						type = 2
+					AND name = #{name}
+					AND isValid = 1
+				),
+				1000
+			)
+		) ]]>
+		AND isValid = 1
+		AND dimensionType = 1
+	</select>
+	
+	<!-- 根据地段排名查询维度信息 -->
+	<select id="getDimensionByArea" parameterType="Integer"
+		resultType="com.jzhl.kfsq.entity.ba.Dimension">
+		SELECT
+			*
+		FROM
+			BA_Dimension
+		WHERE
+			<![CDATA[ beginValue <= IFNULL(
+				(
+					SELECT
+						ranking
+					FROM
+						SM_Area
+					WHERE
+						areaId = #{areaId}
+					AND isValid = 1
+				),
+				21
+			) ]]>
+		AND <![CDATA[ endValue >= IFNULL(
+			(
+				SELECT
+					ranking
+				FROM
+					SM_Area
+				WHERE
+					areaId = #{areaId}
+				AND isValid = 1
+			),
+			1000
+		) ]]>
+		AND dimensionCode = 'section'
+		AND dimensionType = 1
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据绿化率查询维度信息 -->
+	<select id="getDimensionDataSetByGreenRates" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			bad.dimensionId dimensionId,
+	 	    bad.beginValue beginValue,
+		    bad.endValue endValue,
+		    bad.weight weight,
+		    bad.score score
+		FROM
+			BM_CommunityQuality bmcq,
+			BA_Dimension bad
+		WHERE
+			bmcq.buildingId = #{buildingId}
+		AND bmcq.isValid = 1
+		AND <![CDATA[ bad.beginValue <= bmcq.greenRates ]]>
+		AND <![CDATA[ bad.endValue >= bmcq.greenRates ]]>
+		AND bad.dimensionCode = 'greenRates'
+		AND bad.isValid = 1
+	</select>
+	
+	<!-- 根据车位比查询维度信息 -->
+	<select id="getDimensionDataSetByRatioOfSpaces" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			bad.dimensionId dimensionId,
+	 	    bad.beginValue beginValue,
+		    bad.endValue endValue,
+		    bad.weight weight,
+		    bad.score score
+		FROM
+			BM_CommunityQuality bmcq,
+			BA_Dimension bad
+		WHERE
+			bmcq.buildingId = #{buildingId}
+		AND bmcq.isValid = 1
+		AND <![CDATA[ bad.beginValue <= #{ratioOfSpaces} ]]>
+		AND <![CDATA[ bad.endValue >= #{ratioOfSpaces} ]]>
+		AND bad.dimensionCode = 'ratioOfSpaces'
+		AND bad.isValid = 1
+	</select>
+	
+	<!-- 根据园区配套查询维度信息 -->
+	<select id="getDimensionDataSetByParkFacilities" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			cityId = 24
+		AND dimensionCode = 'parkFacilities'
+		AND dimensionType = 1
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据是否人车分流查询维度信息 -->
+	<select id="getDimensionDataSetByIsSeparation" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			(
+				CASE
+				WHEN (
+					SELECT
+						IsSeparation
+					FROM
+						BM_CommunityQuality
+					WHERE
+						buildingId = #{buildingId}
+					AND isValid = 1
+				) = 1 THEN
+					weight
+				ELSE
+					0
+				END
+			) weight,
+			(
+				CASE
+				WHEN (
+					SELECT
+						IsSeparation
+					FROM
+						BM_CommunityQuality
+					WHERE
+						buildingId = #{buildingId}
+					AND isValid = 1
+				) = 1 THEN
+					score
+				ELSE
+					0
+				END
+			) score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'isSeparation'
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据是否有公交查询维度信息 -->
+	<select id="getDimensionDataSetByBus" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			EXISTS (
+				SELECT
+					1
+				FROM
+					BM_LineInfo
+				WHERE
+					buildingId = #{buildingId}
+				AND type = 0
+				GROUP BY
+					lineName
+				ORDER BY
+					distance ASC
+			)
+		AND dimensionCode = 'bus'
+		AND dimensionType = 1
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据公交距离查询维度信息 -->
+	<select id="getDimensionDataSetByBusDistance" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'busDistance'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{minDis}
+		AND endValue &gt;= #{minDis}
+	</select>
+	
+	<!-- 根据最短距离查询对应维度区间的公交数量 -->
+	<select id="countTrafficDataSetByBusNum" parameterType="int"
+		resultType="int">
+		SELECT
+			COUNT(lineId)
+		FROM
+			BM_LineInfo
+		WHERE
+			distance &lt;= (
+				SELECT
+					beginValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionCode = 'busDistance'
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_LineInfo
+					WHERE
+						buildingId = #{buildingId}
+					AND type = 0
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_LineInfo
+					WHERE
+						buildingId = #{buildingId}
+					AND type = 0
+				)
+				AND isValid = 1
+			)
+		AND distance &lt;= (
+				SELECT
+					endValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionCode = 'busDistance'
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_LineInfo
+					WHERE
+						buildingId = #{buildingId}
+					AND type = 0
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_LineInfo
+					WHERE
+						buildingId = #{buildingId}
+					AND type = 0
+				)
+				AND isValid = 1
+			)
+		AND type = 0
+		AND isValid = 1
+		AND buildingId = #{buildingId}
+	</select>
+	
+	<!-- 根据最短距离对应维度区间的公交数量查询维度信息 -->
+	<select id="getDimensionDataSetByBusNum" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'busCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count};
+	</select>
+	
+	<!-- 根据是否有轨道交通工具查询轨道维度信息 -->
+	<select id="getDimensionDataSetByTrack" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			EXISTS (
+				SELECT
+					1
+				FROM
+					BM_LineInfo
+				WHERE
+					buildingId = #{buildingId}
+				AND ( type = 1 OR type = 2 )
+				GROUP BY
+					lineName
+				ORDER BY
+					distance ASC
+			)
+		AND dimensionCode = 'track'
+		AND dimensionType = 1
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据轨道距离查询轨道维度信息 -->
+	<select id="getDimensionDataSetByTrackDistance" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'trackDistance'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{minDis}
+		AND endValue &gt;= #{minDis}
+	</select>
+	
+	<!-- 根据最短距离对应维度区间的轨道数量查询维度信息 -->
+	<select id="getDimensionDataSetByTrackNum" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'trackCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count};
+	</select>
+	
+	<!-- 根据楼盘编号、维度编码和城市编号查询学校最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCodeAndCityIdForSchoolDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = #{dimensionCode}
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Education
+			WHERE
+				buildingId = #{buildingId}
+			<if test="dimensionCode == 'kindergartenDistance'">
+				AND type = 0
+			</if>
+			<if test="dimensionCode == 'middleSchoolDistance'">
+				AND type = 2
+			</if>
+			<if test="dimensionCode == 'collegeDistance'">
+				AND type = 3
+			</if>
+			)
+		
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Education
+			WHERE
+				buildingId = #{buildingId}
+			<if test="dimensionCode == 'kindergartenDistance'">
+				AND type = 0
+			</if>
+			<if test="dimensionCode == 'middleSchoolDistance'">
+				AND type = 2
+			</if>
+			<if test="dimensionCode == 'collegeDistance'">
+				AND type = 3
+			</if>
+		)
+		AND cityId = #{cityId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据最短距离对应维度区间的大学数量查询维度信息 -->
+	<select id="getDimensionDataSetByCollege" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			*
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'collegeCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count};
+	</select>
+	
+	<!-- 根据楼盘编号、维度编码和城市编号查询学校最短距离学校数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCodeAndCityIdForSchoolCount" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = #{dimensionCode1}
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				COUNT(educationId)
+			FROM
+				BM_Education
+			WHERE
+			<if test="dimensionCode == 'kindergartenDistance'">
+				type = 0
+			</if>
+			<if test="dimensionCode == 'middleSchoolDistance'">
+				type = 2
+			</if>
+			<if test="dimensionCode == 'collegeDistance'">
+				type = 3
+			</if>
+			AND buildingId = #{buildingId}
+			AND isValid = 1
+			AND distance &gt;= (
+				SELECT
+					beginValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = #{dimensionCode}
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND cityId = #{cityId}
+				AND isValid = 1
+			)
+			AND distance &lt;= (
+				SELECT
+					endValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = #{dimensionCode}
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND cityId = #{cityId}
+				AND isValid = 1
+			)
+		)
+		AND endValue &gt;= (
+			SELECT
+				COUNT(educationId)
+			FROM
+				BM_Education
+			WHERE
+				<if test="dimensionCode == 'kindergartenDistance'">
+					type = 0
+				</if>
+				<if test="dimensionCode == 'middleSchoolDistance'">
+					type = 2
+				</if>
+				<if test="dimensionCode == 'collegeDistance'">
+					type = 3
+				</if>
+			AND buildingId = #{buildingId}
+			AND isValid = 1
+			AND distance &gt;= (
+				SELECT
+					beginValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = #{dimensionCode}
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND cityId = #{cityId}
+				AND isValid = 1
+			)
+			AND distance &lt;= (
+				SELECT
+					endValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = #{dimensionCode}
+				AND beginValue &lt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND endValue &gt;= (
+					SELECT
+						MIN(distance)
+					FROM
+						BM_Education
+					WHERE
+						buildingId = #{buildingId}
+					<if test="dimensionCode == 'kindergartenDistance'">
+						AND type = 0
+					</if>
+					<if test="dimensionCode == 'middleSchoolDistance'">
+						AND type = 2
+					</if>
+					<if test="dimensionCode == 'collegeDistance'">
+						AND type = 3
+					</if>
+				)
+				AND cityId = #{cityId}
+				AND isValid = 1
+			)
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询普通小学最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForGradeSchoolDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'gradeSchoolDistance'
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Education A
+			WHERE
+				NOT EXISTS (
+					SELECT
+						1
+					FROM
+						SM_Dictionary smd
+					WHERE
+						smd.name = A.schoolName
+					AND smd.type = 3
+					AND smd.isValid = 1
+				)
+			AND A.buildingId = #{buildingId}
+			AND A.type = 1
+			AND A.isValid = 1
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Education A
+			WHERE
+				NOT EXISTS (
+					SELECT
+						1
+					FROM
+						SM_Dictionary smd
+					WHERE
+						smd.name = A.schoolName
+					AND smd.type = 3
+					AND smd.isValid = 1
+				)
+			AND A.buildingId = #{buildingId}
+			AND A.type = 1
+			AND A.isValid = 1
+		)
+		AND cityId = #{cityId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离普通小学数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForGradeSchoolCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'gradeSchoolCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询优质小学最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForGoodGradeSchoolDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'goodGradeSchoolDistance'
+		AND beginValue &lt;= (
+			SELECT
+				bme.distance
+			FROM
+				BM_Education bme,
+				SM_Dictionary smd
+			WHERE
+				bme.buildingId = #{buildingId}
+			AND bme.schoolName = smd.name
+			AND bme.isValid = 1
+			AND bme.type = 1
+		)
+		AND endValue &gt;= (
+			SELECT
+				bme.distance
+			FROM
+				BM_Education bme,
+				SM_Dictionary smd
+			WHERE
+				bme.buildingId = #{buildingId}
+			AND bme.schoolName = smd.name
+			AND bme.isValid = 1
+			AND bme.type = 1
+		)
+		AND cityId = #{cityId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离优质小学数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForGoodGradeSchoolCount" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'goodGradeSchoolCount'
+		AND isValid = 1
+		AND cityId = #{cityId}
+		AND beginValue &lt;= (
+			SELECT
+				COUNT(educationId)
+			FROM
+				BM_Education
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 1
+			AND isValid = 1
+			AND distance &gt;= (
+				SELECT
+					beginValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = 'goodGradeSchoolDistance'
+				AND isValid = 1
+				AND cityId = #{cityId}
+				AND beginValue &lt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+					)
+				AND endValue &gt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+			)
+			AND distance &lt;= (
+				SELECT
+					endValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = 'goodGradeSchoolDistance'
+				AND isValid = 1
+				AND cityId = #{cityId}
+				AND beginValue &lt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+				AND endValue &gt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+			)
+		)
+		AND endValue &gt;= (
+			SELECT
+				COUNT(educationId)
+			FROM
+				BM_Education
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 1
+			AND isValid = 1
+			AND distance &gt;= (
+				SELECT
+					beginValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = 'goodGradeSchoolDistance'
+				AND isValid = 1
+				AND cityId = #{cityId}
+				AND beginValue &lt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+				AND endValue &gt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+			)
+			AND distance &lt;= (
+				SELECT
+					endValue
+				FROM
+					BA_Dimension
+				WHERE
+					dimensionType = 1
+				AND dimensionCode = 'goodGradeSchoolDistance'
+				AND isValid = 1
+				AND cityId = #{cityId}
+				AND beginValue &lt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+				AND endValue &gt;= (
+					SELECT
+						bme.distance
+					FROM
+						BM_Education bme,
+						SM_Dictionary smd
+					WHERE
+						bme.buildingId = #{buildingId}
+					AND bme.schoolName = smd.name
+					AND bme.isValid = 1
+					AND bme.type = 1
+				)
+			)
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询医院最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForHospitalDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'hospitalDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 1
+			AND isValid = 1
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 1
+			AND isValid = 1
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离医院数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForHospitalCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'hospitalCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询诊所最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForClinicDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'clinicDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 2
+			AND isValid = 1
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 2
+			AND isValid = 1
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离诊所数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForClinicCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'clinicCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询药房最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForPharmacyDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'pharmacyDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 3
+			AND isValid = 1
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 3
+			AND isValid = 1
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离药房数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForPharmacyCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'pharmacyCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询银行最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBankDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'bankDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 4
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 4
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离银行数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBankCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'bankCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询娱乐设施最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForEntertainmentDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'entertainmentDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 5
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 5
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离娱乐设施数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForEntertainmentCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'entertainmentCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询商业设施最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBusinessDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'businessDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 6
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 6
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离商业设施数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBusinessCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'businessCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询周边环境最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForEnvironmentDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'environmentDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 7
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 7
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离周边环境数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForEnvironmentCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'environmentCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询不利因素最短距离对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBadFactorDistance" parameterType="map"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'badFactorDistance'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 8
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+		AND endValue &gt;= (
+			SELECT
+				MIN(distance)
+			FROM
+				BM_Around
+			WHERE
+				buildingId = #{buildingId}
+			AND type = 8
+			AND isValid = 1
+			AND distance &lt;= 2000
+		)
+	</select>
+	
+	<!-- 根据楼盘编号和城市编号查询最短距离不利因素数量对应维度信息 -->
+	<select id="getDimensionDataSetByBuildingIdAndCityIdForBadFactorCount" parameterType="int"
+		resultType="com.jzhl.kfsq.dataset.ba.DimensionDataSet">
+		SELECT
+			dimensionId,
+			beginValue,
+			endValue,
+			weight,
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionCode = 'badFactorCount'
+		AND dimensionType = 1
+		AND cityId = 24
+		AND isValid = 1
+		AND beginValue &lt;= #{count}
+		AND endValue &gt;= #{count}
+	</select>
+	
+	<!-- 根据城市编号和标签数量查询标签分数 -->
+	<select id="getScoreByCityIdAndCode" parameterType="map" resultType="int">
+		SELECT
+			score
+		FROM
+			BA_Dimension
+		WHERE
+			dimensionType = 1
+		AND dimensionCode = 'tagCount'
+		AND cityId = #{cityId}
+		AND isValid = 1
+		AND beginValue &lt;= #{tagCount}
+		AND endValue &gt;= #{tagCount}
+	</select>
+
+</mapper>

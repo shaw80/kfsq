@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IPushInfoMapper">
+
+	<resultMap id="smPushinfoResultMap" type="com.jzhl.kfsq.entity.sm.PushInfo">
+		<id property="pushId" column="pushId" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="targetGroup" column="targetGroup" />
+		<result property="cityId" column="cityId" />
+		<result property="pushType" column="pushType" />
+		<result property="isOffLine" column="isOffLine" />
+		<result property="isSuccess" column="isSuccess" />
+		<result property="customTime" column="customTime" />
+		<result property="createTime" column="createTime" />
+		<result property="creatorUserId" column="creatorUserId" />
+	</resultMap>
+	
+	<resultMap id="memberResultMap" type="com.jzhl.kfsq.dataset.sm.PushInfoDataSet">
+		<id property="pushId" column="pushId" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="pushTime" column="pushTime" />
+	</resultMap>
+	
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smPushinfoResultMap"></resultMap>
+	
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smPushinfoResultMap"></resultMap>
+
+	<!-- 新增信息推送 -->
+	<insert id="insertPushInfo" parameterType="com.jzhl.kfsq.entity.sm.PushInfo"  useGeneratedKeys="true" keyProperty="pushId">
+	   insert into SM_PushInfo (
+	     <if test="title != null">
+	     	title,
+		 </if>
+		 <if test="content != null">
+	     	content,
+		 </if>
+	     <if test="targetGroup != null">
+	     	targetGroup,
+		 </if>
+		 <if test="cityId != null">
+	     	cityId,
+		 </if>
+		 <if test="pushType != null">
+	     	pushType,
+		 </if>
+		 <if test="isOffLine != null">
+	     	isOffLine,
+		 </if>
+	     <if test="isSuccess != null">
+	     	isSuccess,
+		 </if>
+	     <if test="customTime != null">
+	     	customTime,
+		 </if>
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+		 </if>
+		 <if test="memberId != null">
+	     	memberId,
+		 </if>
+	     createTime
+	   )values (
+	     <if test="title != null">
+		     #{title},
+		 </if>
+		 <if test="content != null">
+		     #{content},
+		 </if>
+		 <if test="targetGroup != null">
+		     #{targetGroup},
+		 </if>
+		 <if test="cityId != null">
+		     #{cityId},
+		 </if>
+		 <if test="pushType != null">
+		     #{pushType},
+		 </if>
+		 <if test="isOffLine != null">
+		     #{isOffLine},
+		 </if>
+		 <if test="isSuccess != null">
+		     #{isSuccess},
+		 </if>
+	     <if test="customTime != null">
+		     #{customTime},
+		 </if>
+	     <if test="creatorUserId != null">
+	     	 #{creatorUserId},
+		 </if>
+		 <if test="memberId != null">
+	     	 #{memberId},
+		 </if>
+	     now()
+	   )
+	</insert>
+	
+	<!-- 更新推送状态 -->
+	<update id="updatePushInfo" parameterType="com.jzhl.kfsq.entity.sm.PushInfo">
+		update SM_PushInfo set
+			<if test="isSuccess != null">
+				isSuccess = #{isSuccess}
+			</if>
+		<where>
+			<if test="pushId != null">
+				 pushId = #{pushId}
+			</if>
+		</where> 
+	</update>
+	
+	<!-- 根据推送编号查询推送信息-->
+	<select id="getPushInfoDataSet" parameterType="Int" resultMap="memberResultMap">
+		select 
+		pushId, 
+		title, 
+		content, 
+		case when pushType = 0 then DATE_FORMAT(createTime, '%Y-%m-%d %H:%i:%s') else DATE_FORMAT(customTime, '%Y-%m-%d %H:%i:%s') end as pushTime 
+		from 
+		SM_PushInfo 
+		where 
+		pushId = #{pushId}
+	</select>
+	
+	<!-- 分页查询信息推送列表 -->
+	<select id="findPushInfoList" parameterType="map" resultMap="findResultMap">
+		select t1.*, t3.name, t2.areaName  from SM_PushInfo t1 
+			LEFT JOIN SM_ProvinceCity t2 on t1.cityId = t2.areaId
+			LEFT JOIN SM_User t3 on t1.creatorUserId = t3.userId
+			where t1.isSuccess = 1
+			ORDER BY t1.createTime desc, t1.customTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 信息推送总数 -->
+	<select id="getPushInfoDataCount" parameterType="map" resultType="Integer">
+		select count(pushId) from SM_PushInfo where isSuccess = 1
+	</select>
+	
+	<!-- 分页查询所有会员（手机普通用户）的推送信息 -->
+	<select id="findMemberPushInfos" parameterType="map" resultMap="memberResultMap">
+		SELECT
+			a.pushId,
+			a.title,
+			a.content,
+			DATE_FORMAT(a.pushTime,'%Y-%m-%d %H:%i:%s') as pushTime
+		FROM
+			(
+				SELECT
+					pushId,
+					title,
+					content,
+					createTime AS pushTime
+				FROM
+					SM_PushInfo
+				WHERE
+					memberId = #{memberId}
+				AND isSuccess = 1
+				UNION
+					SELECT
+						pushId,
+						title,
+						content,
+						createTime AS pushTime
+					FROM
+						SM_PushInfo
+					WHERE
+						cityId = (
+							SELECT
+								cityId
+							FROM
+								MM_Member
+							WHERE
+								memberId = #{memberId}
+						)
+					AND pushType = 0
+					AND createTime > (
+						SELECT
+							createTime
+						FROM
+							MM_Member
+						WHERE
+							memberId = #{memberId}
+						AND isSuccess = 1
+					)
+					UNION
+						SELECT
+							pushId,
+							title,
+							content,
+							customTime AS pushTime
+						FROM
+							SM_PushInfo
+						WHERE
+							cityId = (
+								SELECT
+									cityId
+								FROM
+									MM_Member
+								WHERE
+									memberId = #{memberId}
+							)
+						AND pushType = 1
+						AND customTime > (
+							SELECT
+								createTime
+							FROM
+								MM_Member
+							WHERE
+								memberId = #{memberId}
+							AND isSuccess = 1
+						)
+			) AS a
+		ORDER BY
+			pushTime DESC
+		LIMIT #{begin}, #{length}
+	</select>
+	
+	<!-- 统计推送给会员的信息总数 -->
+	<select id="countMemberPushInfo" parameterType="Integer" resultType="Integer">
+		SELECT
+			COUNT(pushId)
+		FROM
+			(
+				SELECT
+					pushId,
+					title,
+					content,
+					createTime AS pushTime
+				FROM
+					SM_PushInfo
+				WHERE
+					memberId = #{memberId}
+				AND isSuccess = 1
+				UNION
+					SELECT
+						pushId,
+						title,
+						content,
+						createTime AS pushTime
+					FROM
+						SM_PushInfo
+					WHERE
+						cityId = (
+							SELECT
+								cityId
+							FROM
+								MM_Member
+							WHERE
+								memberId = #{memberId}
+						)
+					AND pushType = 0
+					AND createTime > (
+						SELECT
+							createTime
+						FROM
+							MM_Member
+						WHERE
+							memberId = #{memberId}
+						AND isSuccess = 1
+					)
+					UNION
+						SELECT
+							pushId,
+							title,
+							content,
+							customTime AS pushTime
+						FROM
+							SM_PushInfo
+						WHERE
+							cityId = (
+								SELECT
+									cityId
+								FROM
+									MM_Member
+								WHERE
+									memberId = #{memberId}
+							)
+						AND pushType = 1
+						AND customTime > (
+							SELECT
+								createTime
+							FROM
+								MM_Member
+							WHERE
+								memberId = #{memberId}
+							AND isSuccess = 1
+						)
+			) AS a
+	</select>
+	
+	<!-- 查询没有发送成功的推送消息列表 -->
+	<select id="findNoSendList" parameterType="map" resultType="com.jzhl.kfsq.entity.sm.PushInfo">
+		select t1.* from SM_PushInfo t1 where t1.isSuccess = 0 and t1.pushType = 1
+	</select>
+
+</mapper> 

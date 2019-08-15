@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IBranchMapper">
+
+	<resultMap id="smBranchResultMap" type="com.jzhl.kfsq.entity.sm.Branch">
+		<id property="branchId" column="branchId" />
+		<result property="comanyName" column="comanyName" />
+		<result property="comanyAddress" column="comanyAddress" />
+		<result property="phone" column="phone" />
+		<result property="licence" column="licence" />
+		<result property="branchType" column="branchType" />
+		<result property="branchCityId" column="branchCityId" />
+		<result property="contractTime" column="contractTime" />
+		<result property="upperPrive" column="upperPrive" />
+		<result property="status" column="status" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smBranchResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smBranchResultMap"></resultMap>
+
+	<sql id="baseColumns">
+		 branchId,
+	     comanyName,
+	     comanyAddress,
+	     phone,
+	     licence,
+	     branchType,
+	     branchCityId,
+	     contractTime,
+	     upperPrive,
+	     status,
+	     creatorUserId,
+	     createTime,
+	     updateUserId,
+	     updateTime
+	</sql>
+	
+	<!-- 开通代理 -->
+	<insert id="insertBranch" parameterType="com.jzhl.kfsq.entity.sm.Branch" useGeneratedKeys="true" keyProperty="branchId">
+	   insert into SM_Branch (
+	     <if test="comanyName != null">
+	     	comanyName,
+	     </if>
+	     <if test="comanyAddress != null">
+	     	comanyAddress,
+	     </if>
+	     <if test="phone != null">
+	     	phone,
+	     </if>
+	     <if test="licence != null">
+	     	licence,
+	     </if>
+	     <if test="leadName != null">
+	     	leadName,
+	     </if>
+	     <if test="branchType != null">
+	     	branchType,
+	     </if>
+	     <if test="branchCityId != null">
+	     	branchCityId,
+	     </if>
+	     <if test="contractTime != null">
+	     	contractTime,
+	     </if>
+	     <if test="upperPrive != null">
+	     	upperPrive,
+	     </if>
+	     <if test="status != null">
+	     	status,
+	     </if>
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+	     </if>
+	     	createTime,
+	     <if test="updateUserId != null">
+	     	updateUserId,
+	     </if>
+	     	updateTime
+	   )values (
+	   	 <if test="comanyName != null">
+	     	#{comanyName},
+	     </if>
+	     <if test="comanyAddress != null">
+	     	 #{comanyAddress},
+	     </if>
+	     <if test="phone != null">
+	     	 #{phone},
+	     </if>
+	     <if test="licence != null">
+	     	#{licence},
+	     </if>
+	     <if test="leadName != null">
+	       #{leadName},
+	     </if>
+	     <if test="branchType != null">
+	     	#{branchType},
+	     </if>
+	     <if test="branchCityId != null">
+	     	#{branchCityId},
+	     </if>
+	     <if test="contractTime != null">
+	     	#{contractTime},
+	     </if>
+	     <if test="upperPrive != null">
+	     	#{upperPrive},
+	     </if>
+	     <if test="status != null">
+	     	 #{status},
+	     </if>
+	     <if test="creatorUserId != null">
+	     	#{creatorUserId},
+	     </if>
+	     	now(),
+	     <if test="updateUserId != null">
+	     	#{updateUserId},
+	     </if>
+	     	 now()
+	     )
+	</insert>
+	
+	<!-- 更新代理商 -->
+	<update id="updateBranch" parameterType="com.jzhl.kfsq.entity.sm.Branch">
+	   update SM_Branch set
+	   	 updateTime = now()
+	   	 <if test="comanyName != null">
+			,comanyName = #{comanyName}
+		 </if>
+		 <if test="comanyAddress != null">
+			,comanyAddress = #{comanyAddress}
+		 </if>
+		 <if test="phone != null">
+			,phone = #{phone}
+		 </if>
+		 <if test="licence != null">
+			,licence = #{licence}
+		 </if>
+		 <if test="leadName != null">
+			,leadName = #{leadName}
+		 </if>
+		 <if test="branchType != null">
+			,branchType = #{branchType}
+		 </if>
+		 <if test="branchCityId != null">
+			,branchCityId = #{branchCityId}
+		 </if>
+		 <if test="contractTime != null">
+			,contractTime = #{contractTime}
+		 </if>
+		 <if test="upperPrive != null">
+	     	,upperPrive = #{upperPrive}
+	     </if>
+	   	 <if test="status != null">
+			,status = #{status}
+		 </if>
+		 <if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		 </if>
+	   where 
+	    branchId=#{branchId} 
+	</update>
+
+	<!-- 开通、关闭所代理城市 -->
+	<update id="updateBranchCity" parameterType="com.jzhl.kfsq.entity.sm.BranchCity">
+	   update SM_BranchCity set
+	   	 updateTime = now()
+	   	 <if test="status != null">
+			,status = #{status}
+		 </if>
+		 <if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		 </if>
+	   where 
+	    branchCityId=#{branchCityId} 
+	</update>
+
+	<!-- 获取代理商详情 -->
+	<select id="getBranch" parameterType="com.jzhl.kfsq.entity.sm.Branch" resultType="com.jzhl.kfsq.entity.sm.Branch">
+		select  t1.*, t2.userId, t2.IDCardImg, t3.areaName from SM_Branch t1 
+			LEFT JOIN SM_User t2 on t1.branchId = t2.branchId
+			LEFT JOIN SM_ProvinceCity t3 on t1.branchCityId = t3.areaId
+			where t1.status = 1 and t2.roleId=(SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0')
+		<if test="branchId != null">
+			and t1.branchId = #{branchId}
+		</if>
+	</select>
+	
+	<!-- 分页获取代理商权限列表 -->
+	<select id="getBranchListPage" parameterType="map" resultType="com.jzhl.kfsq.entity.sm.Branch">
+	   select t1.* , t2.areaName  ,t3.status cityStatus, t4.userId
+			from SM_Branch t1
+	   LEFT JOIN SM_ProvinceCity t2 on t1.branchCityId = t2.areaId 
+	   LEFT JOIN SM_BranchCity t3 on t1.branchCityId = t3.branchCityId
+		 LEFT JOIN SM_User t4 on t1.branchId = t4.branchId and t1.phone = t4.mobilePhone
+	   where t1.status = 1
+	   limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 获取代理商权限列表 -->
+	<select id="getBranchList" parameterType="map" resultType="com.jzhl.kfsq.entity.sm.Branch">
+	   select t1.* , t2.areaName  ,t3.status cityStatus from SM_Branch t1
+	   LEFT JOIN SM_ProvinceCity t2 on t1.branchCityId = t2.areaId 
+	   LEFT JOIN SM_BranchCity t3 on t1.branchCityId = t3.branchCityId
+	   where t1.status = 1
+	</select>
+	
+	<!-- 代理商旗下楼盘总数 -->
+	<select id="getBuildingCount" parameterType="map" resultType="Integer">
+	   select COUNT(buildingId) from BM_Building
+	   <where> 
+	   		<if test="userId != null">
+				agentId = #{userId}
+			</if>
+	   		<if test="branchId != null">
+	   			and agentId in ( select userId from SM_User where roleId = (SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0') and branchId = #{branchId} )
+			</if>
+	   </where>
+	</select>
+	
+	<!-- 昨日代理商所在城市新增楼盘总数 -->
+	<select id="getBuildingCountYesterday" parameterType="map" resultType="Integer">
+	   select COUNT(buildingId) from BM_Building
+	   <where> 
+	   		<if test="branchId != null">
+	   		    agentId in ( select userId from SM_User where roleId = (SELECT roleId from SM_Role where roleCode = 'agent' and roleType = '0') and branchId = #{branchId} )
+	   		    and TO_DAYS(NOW()) - TO_DAYS(createTime) = 1
+			</if>
+	   </where>
+	</select>
+	
+	<!-- 代理商总数 -->
+	<select id="getBranchDataCount" resultType="Integer">
+	   select COUNT(branchId) from SM_Branch  where status = 1
+	</select>
+	
+	<select id="getAgentIdByCityId" parameterType="Integer" resultType="Integer">
+		SELECT
+			smu.userId
+		FROM
+			SM_Branch smb,
+			SM_User smu,
+			SM_Role smr
+		WHERE
+			smb.branchId = smu.branchId
+		AND smu.roleId = smr.roleId
+		AND smr.isValid = 1
+		AND smu.isValid = 1
+		AND smr.roleCode = 'agent'
+		AND smb.branchCityId = #{cityId}
+	</select>
+	
+	<!-- 查询全部分站 -->
+	<select id="findAll" resultType="com.jzhl.kfsq.entity.sm.Branch">
+		SELECT
+			*
+		FROM
+			SM_Branch
+		WHERE
+			STATUS = 1
+	</select>
+	
+</mapper> 

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.pm.ISalesDirectorMapper">
+
+	<resultMap type="com.jzhl.kfsq.dataset.pm.SalesDirectoVisitDataSet" id="visitCommonTeamResultMap">
+		<result property="userId" column="userId" />
+		<result property="count" column="count" />
+		<result property="headPortrait" column="headPortrait" />
+		<result property="userName" column="userName" />
+		<result property="maxVisitTime" column="maxVisitTime" />
+	</resultMap>
+
+	<!-- 根据营销总监编号分页查询某段时间本楼盘所有团队到访业绩 -->	
+	<select id="findVisitTeam" parameterType="com.jzhl.kfsq.dto.pm.SalesDirectorCountDto" resultMap="visitCommonTeamResultMap">
+		 select 
+		 a.userId userId, 
+		 a.name userName,
+		 a.headPortrait headPortrait,
+		 ( 	select count(sc.userId) from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId
+			and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = a.userId and u.isValid = 1 and appUserType = 2 and userType = 1) and sc.isValid = 1
+			<if test="beginDate != null and beginDate != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') >= date_format(#{beginDate}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d') ]]>
+			</if> 
+		)  count,
+		( 	select sc.createTime from PM_SalerCustomer sc, SM_User u where sc.userId = u.userId
+			and sc.userId in ( select u.userId from SM_User u where u.leaderUserId = a.userId and u.isValid = 1 and appUserType = 2 and userType = 1) and sc.isValid = 1  
+			<if test="beginDate != null and beginDate != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') >= date_format(#{beginDate}, '%Y-%m-%d') ]]>
+			</if> 
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and date_format(sc.updateTime, '%Y-%m-%d') <= date_format(#{endDate}, '%Y-%m-%d') ]]>
+			</if>   
+			order by sc.createTime desc limit 0, 1
+		) maxVisitTime  
+		from 
+		SM_User a 
+		where 
+		leaderUserId = #{userId}
+		and
+		appUserType = 1
+		and 
+		userType = 1
+		and 
+		isValid = 1  
+		order by count desc, maxVisitTime asc 
+		limit #{rowStart}, #{offset}
+	</select>
+	
+	
+	<!-- 根据销售总监编号统计本楼盘有多少个销售经理 -->
+	<select id="countVisitTeam" parameterType="com.jzhl.kfsq.dto.pm.SalesDirectorCountDto" resultType="Integer">
+		select 
+		count(userId) 
+		from 
+		SM_User a 
+		where 
+		userId in (
+			select 
+			userId 
+			from 
+			SM_User 
+			where 
+			leaderUserId = #{userId}
+			and 
+			isValid = 1 
+		) 
+		and isValid = 1
+	</select>
+	
+</mapper>

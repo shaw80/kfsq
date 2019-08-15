@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IRemindInfoMapper">
+
+	<resultMap id="smRemindinfoResultMap" type="com.jzhl.kfsq.entity.sm.RemindInfo">
+		<id property="remindId" column="remindId" />
+		<result property="branchId" column="branchId" />
+		<result property="content" column="content" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	<resultMap id="pageResultMap" type="java.util.HashMap" extends="smRemindinfoResultMap"></resultMap>
+	<resultMap id="findResultMap" type="java.util.HashMap" extends="smRemindinfoResultMap"></resultMap>
+
+	<insert id="insertData" parameterType="com.jzhl.kfsq.entity.sm.RemindInfo">
+		insert into SM_RemindInfo (
+			branchId,
+			content,
+			createTime
+		)values (
+			#{branchId},
+			#{content},
+			now()
+		)
+	</insert>
+
+	<!-- 分页查询提醒列表 -->
+	<select id="findRemindInfoList" parameterType="map" resultMap="findResultMap">
+		select t2.comanyName, t1.remindId, t1.content, t2.leadName,t2.phone,t1.createTime 
+			from SM_RemindInfo t1 
+			LEFT JOIN SM_Branch t2 on t1.branchId = t2.branchId 
+			ORDER BY t1.createTime desc 
+			limit #{rowstart}, #{offset}
+	</select>
+
+	<!-- 提醒列表总数 -->
+	<select id="getRemindInfoDataCount" parameterType="map" resultType="Integer">
+		select COUNT(remindId) from SM_RemindInfo t1 
+			LEFT JOIN SM_Branch t2 on t1.branchId = t2.branchId 
+	</select>
+	
+	<!-- 清空表数据 -->
+	<delete id="deleteData">
+		delete from SM_RemindInfo;
+	</delete>
+</mapper> 

@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingDetailMapper">
+	
+	<!-- 根据楼盘编号查询楼盘详情 -->
+	<select id="getBuildingDetail" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.BuildingDetail">
+		SELECT
+			bmb.buildingId buildingId,
+			bmb.buildingName buildingName,
+			bmb.averagePrice averagePrice,
+			bmb.address address,
+			bmb.phone phone,
+			bmb.banner banner,
+			bmb.salesType salesType,
+			IFNULL(babs.totalScore, 0) totalScore,
+			(
+				SELECT
+					IFNULL(
+						(
+							SELECT
+								COUNT(creatorUserId)
+							FROM
+								CM_BuildingComment
+							WHERE
+								buildingId = #{buildingId}
+							AND isValid = 1
+							AND auditStatus = 1
+							GROUP BY
+								creatorUserId
+						),
+						0
+					)
+			) countMember,
+			(
+				SELECT COUNT(WeightSumValue)
+				FROM
+				(SELECT
+					SUM(
+						bad.weight * 0.01 * bame.dimensionValue
+					) AS WeightSumValue
+				FROM
+					BA_MemberEvaluate bame
+				INNER JOIN BA_Dimension bad ON bad.dimensionCode = bame.dimensionCode
+				AND bad.dimensionType = 2
+				WHERE
+					bame.commentId IN (
+						SELECT
+							commentId
+						FROM
+							CM_BuildingComment
+						WHERE
+							buildingId = #{buildingId}
+						AND isValid = 1
+						AND auditStatus = 1
+					)
+				GROUP BY bame.commentId) a
+				WHERE <![CDATA[ WeightSumValue >= 50 ]]>
+			) countHighOpinion,
+			(
+				SELECT COUNT(WeightSumValue)
+				FROM
+				(SELECT
+					SUM(
+						bad.weight * 0.01 * bame.dimensionValue
+					) AS WeightSumValue
+				FROM
+					BA_MemberEvaluate bame
+				INNER JOIN BA_Dimension bad ON bad.dimensionCode = bame.dimensionCode
+				AND bad.dimensionType = 2
+				WHERE
+					bame.commentId IN (
+						SELECT
+							commentId
+						FROM
+							CM_BuildingComment
+						WHERE
+							buildingId = #{buildingId}
+						AND isValid = 1
+						AND auditStatus = 1
+					)
+				GROUP BY bame.commentId) a
+				WHERE <![CDATA[ WeightSumValue < 50 ]]>
+			) countNegativeComment,
+			(
+				SELECT
+					COUNT(cmbc.commentId)
+				FROM
+					CM_BuildingComment cmbc,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.commentId = cmct.commentId
+				AND cmbc.isValid = 1
+				AND cmct.commentType = 1
+			) countUnitMap,
+			(
+				SELECT
+					COUNT(cmbc.commentId)
+				FROM
+					CM_BuildingComment cmbc,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.commentId = cmct.commentId
+				AND cmbc.isValid = 1
+				AND cmct.commentType = 2
+			) countCommunityQuality,
+			(
+				SELECT
+					COUNT(cmbc.commentId)
+				FROM
+					CM_BuildingComment cmbc,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.commentId = cmct.commentId
+				AND cmbc.isValid = 1
+				AND cmct.commentType = 4
+			) countEducation,
+			(
+				SELECT
+					COUNT(cmbc.commentId)
+				FROM
+					CM_BuildingComment cmbc,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.commentId = cmct.commentId
+				AND cmbc.isValid = 1
+				AND cmct.commentType = 5
+			) countAround,
+			(
+				SELECT
+					COUNT(cmbc.commentId)
+				FROM
+					CM_BuildingComment cmbc,
+					CM_CommentType cmct
+				WHERE
+					cmbc.buildingId = #{buildingId}
+				AND cmbc.commentId = cmct.commentId
+				AND cmbc.isValid = 1
+				AND cmct.commentType = 3
+			) countTraffic
+		FROM
+			BM_Building bmb
+		LEFT JOIN BA_BuildingScore babs ON babs.buildingId = bmb.buildingId AND babs.isValid = 1
+		WHERE
+			bmb.buildingId = #{buildingId}
+		AND bmb.isValid = 1
+		
+	</select>
+	
+	<!-- 根据楼盘编号查询楼盘信息 -->
+	<select id="getBuildingInfoDataSet" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.BuildingInfoDataSet">
+		SELECT
+			a.buildingId buildingId,
+			a.buildingName buildingName,
+			a.address address,
+			a.salesType salesType,
+			a.buildingType buildingType,
+			a.decorationSituation decorationSituation,
+			a.goodsType goodsType,
+			a.openTime openTime,
+			a.launchTime launchTime,
+			a.periodOfPropertyRights periodOfPropertyRights,
+			a.developer developer,
+			a.property property,
+			a.volumeRatio volumeRatio,
+			a.propertyFee propertyFee,
+			a.greenRates greenRates,
+			a.ratioOfSpaces ratioOfSpaces,
+			a.IsSeparation IsSeparation,
+			(
+				SELECT
+					GROUP_CONCAT(CONCAT(smt.tagName))
+			) parkFacilities
+		FROM
+			(
+				SELECT
+					bmb.buildingId buildingId,
+					bmb.buildingName buildingName,
+					bmb.address address,
+					(
+						CASE bmb.salesType
+						WHEN 0 THEN
+							'预售'
+						WHEN 1 THEN
+							'在售'
+						WHEN 2 THEN
+							'售罄'
+						END
+					) salesType,
+					(
+						CASE bmb.buildingType
+						WHEN '0' THEN
+							'多层'
+						WHEN '1' THEN
+							'高层'
+						WHEN '2' THEN
+							'花园洋房'
+						WHEN '0,1' THEN
+							'多层，高层'
+						WHEN '0,2' THEN
+							'多层，花园洋房'
+						WHEN '1,2' THEN
+							'高层，花园洋房'
+						WHEN '0,1,2' THEN
+							'多层，高层，花园洋房'
+						END
+					) buildingType,
+					(
+						CASE bmb.decorationSituation
+						WHEN 0 THEN
+							'毛坯'
+						WHEN 1 THEN
+							'精装'
+						END
+					) decorationSituation,
+					(
+						CASE bmb.goodsType
+						WHEN '0' THEN
+							'现房'
+						WHEN '1' THEN
+							'期房'
+						WHEN '0,1' THEN
+							'现房，期房'
+						END
+					) goodsType,
+					DATE_FORMAT(bmb.openTime, '%Y-%m-%d') openTime,
+					DATE_FORMAT(bmb.launchTime, '%Y-%m-%d') launchTime,
+					bmb.periodOfPropertyRights periodOfPropertyRights,
+					bmb.developer developer,
+					bmb.property property,
+					bmcq.volumeRatio volumeRatio,
+					bmcq.propertyFee propertyFee,
+					bmcq.greenRates greenRates,
+					bmcq.ratioOfSpaces ratioOfSpaces,
+					(
+						CASE bmcq.IsSeparation
+						WHEN 0 THEN
+							'不分流'
+						WHEN 1 THEN
+							'分流'
+						WHEN 2 THEN
+							'未知'
+						END
+					) IsSeparation,
+					bmbt.tagId tagId
+				FROM
+					BM_Building bmb
+				LEFT JOIN BM_CommunityQuality bmcq ON bmb.buildingId = bmcq.buildingId
+				LEFT JOIN BM_BuildingTag bmbt ON bmbt.buildingId = bmb.buildingId
+				WHERE
+					bmb.buildingId = #{buildingId}
+				AND bmb.isValid = 1
+				AND bmcq.isValid = 1
+			) a
+		LEFT JOIN SM_Tag smt ON smt.tagId = a.tagId
+		AND smt.tagType = 5
+		AND smt.isValid = 1
+	</select>
+	
+</mapper> 

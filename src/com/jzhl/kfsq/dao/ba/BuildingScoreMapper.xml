@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.ba.IBuildingScoreMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.ba.BuildingScore" id="baseResultMap">
+		<id property="scoreId" column="scoreId" />
+		<result property="batchId" column="batchId" />
+		<result property="cityId" column="cityId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="buildingName" column="buildingName" />
+		<result property="unitMapScore" column="unitMapScore" />
+		<result property="communityScore" column="communityScore" />
+		<result property="trafficScore" column="trafficScore" />
+		<result property="educationScore" column="educationScore" />
+		<result property="peripheryScore" column="peripheryScore" />
+		<result property="totalScore" column="totalScore" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		scoreId, 
+		batchId, 
+		cityId,
+		buildingId,
+		buildingName,
+		unitMapScore,
+		communityScore,
+		trafficScore,
+		educationScore,
+		peripheryScore,
+		totalScore,
+		isValid,
+		creatorUserId,
+		createTime
+	</sql>
+	
+	<sql id="baseTables">
+		BA_BuildingScore
+	</sql>
+	
+	<!-- 根据楼盘编号查询楼盘分数 -->
+	<select id="getBuildingScoreByBuildingId" parameterType="int" resultMap="baseResultMap">
+		SELECT
+			<include refid="baseColumns" />
+		FROM
+			<include refid="baseTables" />
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+	</select>
+	
+	<!-- 保存楼盘评分 -->
+	<insert id="insertBuildingScore" parameterType="com.jzhl.kfsq.entity.ba.BuildingScore">
+		INSERT INTO BA_BuildingScore (
+			scoreId,
+			batchId,
+			cityId,
+			buildingId,
+			buildingName,
+			unitMapScore,
+			communityScore,
+			trafficScore,
+			educationScore,
+			peripheryScore,
+			totalScore,
+			creatorUserId,
+			createTime
+		)
+		VALUES
+			(
+				#{scoreId},
+				#{batchId},
+				#{cityId},
+				#{buildingId},
+				#{buildingName},
+				#{unitMapScore},
+				#{communityScore},
+				#{trafficScore},
+				#{educationScore},
+				#{trafficScore},
+				#{totalScore},
+				1,
+				now()
+			)
+	</insert>
+	
+	<!-- 更新楼盘评分 -->
+	<update id="updateBuildingScore" parameterType="com.jzhl.kfsq.entity.ba.BuildingScore">
+		UPDATE BA_BuildingScore
+		SET 
+		 unitMapScore = #{unitMapScore},
+		 communityScore = #{communityScore},
+		 trafficScore = #{trafficScore},
+		 educationScore = #{educationScore},
+		 peripheryScore = #{peripheryScore},
+		 totalScore = #{totalScore},
+		 updateTime = NOW()
+		WHERE
+			buildingId = #{buildingId}
+	</update>
+
+</mapper> 

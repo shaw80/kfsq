@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IVersionUpdateMapper">
+
+	<resultMap id="smVersionupdateResultMap" type="com.jzhl.kfsq.entity.sm.VersionUpdate">
+		<id property="versionId" column="versionId" />
+		<result property="versionNum" column="versionNum" />
+		<result property="updateCode" column="updateCode" />
+		<result property="filePath" column="filePath" />
+		<result property="fileSize" column="fileSize" />
+		<result property="isPush" column="isPush" />
+		<result property="isUpdate" column="isUpdate" />
+		<result property="type" column="type" />
+		<result property="versionTitle" column="versionTitle" />
+		<result property="versionInfo" column="versionInfo" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smVersionupdateResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smVersionupdateResultMap"></resultMap>
+
+	<insert id="insertVersionUpdate" parameterType="com.jzhl.kfsq.entity.sm.VersionUpdate" useGeneratedKeys="true" keyProperty="versionId">
+	   insert into SM_VersionUpdate (
+	     versionNum,
+	     updateCode,
+	     filePath,
+	     fileSize,
+	     <if test="isPush != null">
+	     	isPush,
+		 </if>
+	     isUpdate,
+	     type,
+	     versionTitle,
+	     versionInfo,
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+		 </if>
+	     createTime,
+	     isValid
+	   )values (
+	     #{versionNum},
+	     #{updateCode},
+	     #{filePath},
+	     #{fileSize},
+	     <if test="isPush != null">
+	     	 #{isPush},
+		 </if>
+	     #{isUpdate},
+	     #{type},
+	     #{versionTitle},
+	     #{versionInfo},
+	     <if test="creatorUserId != null">
+	     	 #{creatorUserId},
+		 </if>
+	     now(),
+	     1
+	   )
+	</insert>
+	
+	<!-- 当前版本更新 -->
+	<update id="updateVersionUpdate" parameterType="com.jzhl.kfsq.entity.sm.VersionUpdate">
+		update SM_VersionUpdate
+		set 
+		<if test="versionNum != null">
+			versionNum = #{versionNum},
+	    </if>
+	    <if test="filePath != null">
+			filePath = #{filePath},
+	    </if>
+	    <if test="fileSize != null">
+			fileSize = #{fileSize},
+	    </if>
+	    <if test="isPush != null">
+			isPush = #{isPush},
+	    </if>
+	    <if test="isUpdate != null">
+			isUpdate = #{isUpdate},
+	    </if>
+		<if test="type != null">
+			type = #{type},
+	    </if>  
+		<if test="versionTitle != null">
+			versionTitle = #{versionTitle},
+	    </if>   
+		<if test="versionInfo != null">
+			versionInfo = #{versionInfo},
+	    </if>   
+		<if test="creatorUserId != null">
+		   	creatorUserId = #{creatorUserId},
+		</if>
+		   	createTime = now()
+		where 
+			versionId = #{versionId}
+	</update>
+	
+	<!-- 把其他版本设置为无效 -->
+	<update id="updateVersionIsValid" parameterType="com.jzhl.kfsq.entity.sm.VersionUpdate">
+		update SM_VersionUpdate
+		set 
+		isValid = 0 
+		where
+		type = #{type}
+		and versionId != #{versionId}
+	</update>
+	
+	<!-- 查询各端app版本列表 -->
+	<select id="findVersionUpdateList" parameterType="map" resultType="com.jzhl.kfsq.entity.sm.VersionUpdate">
+	     select * from SM_VersionUpdate where  isValid=1
+	</select>
+	
+	<!-- 查询当前版本信息 -->
+	<select id="selectByisValid" parameterType="com.jzhl.kfsq.entity.sm.VersionUpdate" resultType="com.jzhl.kfsq.entity.sm.VersionUpdate">
+	     select * from SM_VersionUpdate where  isValid=1 and versionId = #{versionId}
+	</select>
+	
+	<!-- 手机端根据版本编号和客户端类型查询版本更新信息 -->
+	<select id="findVersionsByCodeAndType" parameterType="com.jzhl.kfsq.dto.sm.VersionAppDto" resultType="com.jzhl.kfsq.entity.sm.VersionUpdate">
+	     SELECT
+			*
+		 FROM
+			SM_VersionUpdate
+		 WHERE
+			updateCode > #{versionCode}
+		 AND type = #{type}
+		 ORDER BY
+			updateCode DESC
+	</select>
+	
+</mapper> 

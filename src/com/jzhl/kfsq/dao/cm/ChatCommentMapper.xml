@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jzhl.kfsq.dao.cm.IChatCommentMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.cm.ChatComment" id="baseResultMap">
+		<id property="commentId" column="commentId" />
+		<result property="commentTitle" column="commentTitle" />
+		<result property="parentCommentId" column="parentCommentId" />
+		<result property="content" column="content" />
+		<result property="configValue" column="configValue" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		commentId,
+		commentTitle,
+		parentCommentId,
+		content,
+		configValue,
+		isValid,
+		creatorUserId,
+		createTime,
+		replyParentUserId,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<insert id="insertChatComment" useGeneratedKeys="true" keyProperty="commentId" >
+		insert into CM_ChatComment
+		(
+			<trim prefixOverrides=",">
+				<if test="commentTitle != null">
+					,commentTitle
+				</if>
+				,parentCommentId
+				,content
+				,configValue
+				,isValid
+				,creatorUserId
+				,createTime
+				<if test="replyParentUserId != null and replyParentUserId !=0">
+				,replyParentUserId
+				</if>
+			</trim>
+		)
+		values
+		(
+			<trim prefixOverrides=",">
+				<if test="commentTitle != null">
+				,#{commentTitle}
+				</if>
+				,#{parentCommentId}
+				,#{content}
+				,#{configValue}
+				,1
+				,#{creatorUserId}
+				,now()
+				<if test="replyParentUserId != null and replyParentUserId !=0">
+					,#{replyParentUserId}
+				</if>
+			</trim>
+		)
+	</insert>
+	
+	<select id="getChatComment" parameterType="java.lang.Integer" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from CM_ChatComment
+		where commentId = #{commentId}
+	</select>
+	
+	<!-- 评论管理-问问发表列表 -->
+	<select id="findChatCommentList" parameterType="map" resultType="com.jzhl.kfsq.dataset.cm.ChatCommentDataSet">
+		 select t1.*, 
+				t2.account, 
+				t2.nickName,
+				(select COUNT(imgId) from CM_CommentImg t4 where t4.commentType = 1 and t4.commentId = t1.commentId) imgNum
+				from CM_ChatComment t1 
+				LEFT JOIN MM_Member t2 on t1.creatorUserId = t2.memberId
+			<where>
+			     <if test="isValid != null">
+			        t1.isValid = #{isValid}
+			     </if>
+			     <if test="configValue != null">
+			        and t1.configValue = #{configValue}
+			     </if>
+			     <if test="keyword != null">
+			        and (t1.content like '%${keyword}%'
+			        or t2.nickName like '%${keyword}%')
+			     </if>
+			</where>
+			order by t1.isTop desc, t1.updateTime desc, createTime desc
+			limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 评论管理-问问发表列表总数 -->
+	<select id="findChatCommentDataCount" parameterType="map" resultType="Integer">
+	   	 select count(t1.commentId)
+				from CM_ChatComment t1 
+				LEFT JOIN MM_Member t2 on t1.creatorUserId = t2.memberId
+			<where>
+			     <if test="isValid != null">
+			        and t1.isValid = #{isValid}
+			     </if>
+			     <if test="configValue != null">
+			        and t1.configValue = #{configValue}
+			     </if>
+			     <if test="keyword != null">
+			        and (t1.content like '%${keyword}%'
+			        or t2.nickName like '%${keyword}%')
+			     </if>
+			</where>
+	</select>
+	
+	<!-- 评论管理-查看评论详情-->
+	<select id="getChatCommentInfo" parameterType="com.jzhl.kfsq.entity.cm.ChatComment" resultType="com.jzhl.kfsq.dataset.cm.ChatCommentDataSet">
+	   	 select * from CM_ChatComment where commentId = #{commentId}
+	</select>
+	
+	<!-- 评论管理-查看评论详情-根据commentId查看图片-->
+	<select id="findCommentImgList" parameterType="com.jzhl.kfsq.entity.cm.ChatComment" resultType="com.jzhl.kfsq.entity.cm.CommentImg">
+	   	 select * from CM_CommentImg where commentType=1 and isUse=1 and commentId = #{commentId}
+	</select>
+	
+	<!-- 审核通过、不通过 -->
+	<update id="updateChatComment" parameterType="com.jzhl.kfsq.entity.cm.ChatComment">
+	   update CM_ChatComment set
+	   	 updateTime = now()
+	   	 <if test="configValue != null">
+			,configValue = #{configValue}
+		 </if>
+		 <if test="isTop != null">
+			,isTop = #{isTop}
+		 </if>
+		 <if test="updateUserId != null">
+			,updateUserId = #{updateUserId}
+		 </if>
+	   where 
+	    commentId=#{commentId} 
+	</update>
+	
+</mapper>

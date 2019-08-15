@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IRoleRightMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.RoleRight" id="baseResultMap">
+		<id property="roleRightId" column="roleRightId" />
+		<result property="roleId" column="roleId" />
+		<result property="rightId" column="rightId" />
+		<result property="isValid" column="isValid" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		roleRightId,
+		roleId,
+		rightId,
+		isValid,
+		creatorUserId,
+		createTime,
+		updateUserId,
+		updateTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_RoleRight
+    </sql>
+	
+	<!-- 添加中间表信息 -->
+	<insert id="insertRoleRight" parameterType="com.jzhl.kfsq.entity.sm.RoleRight">
+		insert into 
+		<include refid="tableName" />
+		(
+			roleId
+			,rightId
+			<if test="creatorUserId != null">
+				,creatorUserId
+			</if>
+			<if test="updateUserId != null">
+				,updateUserId
+			</if>
+			,createTime
+		)
+		values
+		(
+			#{roleId}
+			,#{rightId}
+			<if test="creatorUserId != null">
+				,#{creatorUserId}
+			</if>
+			<if test="updateUserId != null">
+				,#{updateUserId}
+			</if>
+			,now()
+		)
+	</insert>
+	
+	<!-- 根据roleId删除中间表信息（物理删除） -->
+	<update id="deleteRoleRight" parameterType="int">
+		DELETE
+		FROM 
+		<include refid="tableName" /> 
+		WHERE
+		roleId = #{roleId}
+	</update>
+	
+	<!-- 更新中间表信息 -->
+	<update id="updateRoleRight" parameterType="com.jzhl.kfsq.entity.sm.RoleRight">
+		update 
+		<include refid="tableName" /> 
+		set
+		roleId = #{roleId},
+		rightId = #{rightId},
+		where
+		roleRightId = #{roleRightId}
+	</update>
+	
+	<!-- 根据中间表编号查询中间表信息 -->
+	<select id="getRoleRight" parameterType="int" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		roleRightId = #{roleRightId}
+	</select>
+	
+	<!-- 根据角色编号查询中间关系 -->
+	<select id="findRoleRightByRoleId" parameterType="int" resultMap="baseResultMap">
+		SELECT
+		<include refid="baseColumns" />
+		FROM
+		<include refid="tableName" />
+		WHERE
+		roleId = #{roleId}
+	</select>
+
+</mapper>

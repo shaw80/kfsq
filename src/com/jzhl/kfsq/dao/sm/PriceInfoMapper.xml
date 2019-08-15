@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IPriceInfoMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.PriceInfo" id="baseResultMap">
+		<id property="priceId" column="priceId" />
+		<result property="minPrice" column="minPrice" />
+		<result property="maxPrice" column="maxPrice" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		priceId,
+		minPrice,
+		maxPrice,
+		createTime,
+		updateTime,
+		isValid
+	</sql>
+	
+	<sql id="tableName">
+        SM_PriceInfo
+    </sql>
+    
+    <!-- 添加单价 -->
+	<insert id="insertPriceInfo" parameterType="com.jzhl.kfsq.entity.sm.PriceInfo">
+		insert into SM_PriceInfo
+		(
+			minPrice
+			,maxPrice
+			,createTime
+			,isValid
+		)
+		values
+		(
+			#{minPrice}
+			,#{maxPrice}
+			,now()
+			,1
+		)
+	</insert>
+    
+    <!-- 编辑单价 -->
+	<update id="updatePriceInfo" parameterType="com.jzhl.kfsq.entity.sm.PriceInfo">
+	   update SM_PriceInfo set
+	     updateTime=now(),
+	     <if test="minPrice != null">
+	         minPrice=#{minPrice},
+	     </if>
+	     <if test="maxPrice != null">
+	         maxPrice=#{maxPrice},
+	     </if>
+	     <if test="isValid != null">
+	         isValid=#{isValid}
+	     </if>
+	   where 
+	    priceId=#{priceId} 
+	</update>
+	
+	<!-- 查询全部价格信息 -->
+	<select id="findPriceInfo" resultMap="baseResultMap">
+		select
+		<include refid="baseColumns" />
+		from
+		<include refid="tableName" />
+		where
+		isValid = 1
+	</select>
+	
+    <!-- 查询全部价格信息 -->
+	<select id="findPriceInfoList" parameterType="map" resultMap="baseResultMap">
+		select * from SM_PriceInfo limit #{rowstart}, #{offset}
+	</select>
+	
+	<!-- 查询全部价格信息 -->
+	<select id="getPriceInfoDataCount" parameterType="map" resultType="Integer">
+		select count(priceId) from SM_PriceInfo
+	</select>
+	
+	<!-- 查询全部价格信息 -->
+	<select id="findPriceList" parameterType="com.jzhl.kfsq.entity.sm.PriceInfo" resultMap="baseResultMap">
+		select * from SM_PriceInfo
+		<where>
+			<if test="priceId != null">
+				priceId != #{priceId}
+			</if>
+		</where>
+	</select>
+</mapper>

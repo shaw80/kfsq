@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.ITrafficScoreDetailMapper">
+	
+	<!-- 根据楼盘编号查询交通分数详情 -->
+	<select id="getTrafficScoreDetail" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.TrafficScoreDetail">
+		SELECT
+			bmb.buildingId buildingId,
+			bmb.buildingName buildingName,
+			bmb.longitude longitude,
+			bmb.latitude latitude,
+			bmbei.trafficImg trafficImg,
+			ifnull(babs.trafficScore, 0) trafficScore,
+			ifnull((
+				SELECT
+					COUNT(memberId)
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BA_MemberEvaluate
+						WHERE
+							buildingId = #{buildingId}
+						AND dimensionCode = 'traffic'
+						AND isValid = 1
+						GROUP BY
+							memberId
+					) a
+			), 0) countMember
+		FROM
+			BM_Building bmb 
+		LEFT JOIN BM_BuildingExtendImage bmbei ON bmb.buildingId = bmbei.buildingId 
+		LEFT JOIN BA_BuildingScore babs ON bmb.buildingId = babs.buildingId 
+		WHERE
+			bmb.buildingId = #{buildingId} 
+		AND bmb.isValid = 1
+		AND bmbei.isValid = 1
+		AND babs.isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号和交通类型查询交通工具信息 -->
+	<select id="findTrafficDataSetByBuildingIdAndType" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.TrafficDataSet">
+		SELECT
+			bmli.lineId,
+		    bmli.lineName,
+		    bmli.distance,
+		    bmt.longitude,
+		    bmt.latitude
+		FROM
+			BM_LineInfo bmli
+		LEFT JOIN
+			BM_Traffic bmt
+		ON
+			bmli.distance = bmt.distance
+		AND
+			bmli.buildingId = bmt.buildingId
+		WHERE
+			bmli.buildingId = #{buildingId}
+		AND bmt.isValid = 1
+		AND bmli.type = #{type}
+		AND bmli.distance <![CDATA[ <= ]]> #{distance}
+		GROUP BY 
+			bmli.lineName
+		ORDER BY
+			bmli.distance,bmli.lineId
+		LIMIT 15
+	</select>
+	
+	<!-- 根据楼盘编号和类型统计交通工具数量 -->
+	<select id="countTrafficByBuildingIdAndType" parameterType="map" resultType="int">
+		SELECT
+			COUNT(trafficId)
+		FROM
+			(
+				SELECT
+					bml.lineId trafficId,
+					bml.lineName lineName,
+					bml.distance distance,
+					bmt.latitude latitude,
+					bmt.longitude longitude
+				FROM
+					BM_LineInfo bml,
+					BM_Traffic bmt
+				WHERE
+					bml.buildingId = #{buildingId}
+				AND bml.type = #{type}
+				AND bmt.isValid = 1
+				AND bml.buildingId = bmt.buildingId
+				<if test="type == 0">
+					AND bml.distance &lt;= 1000
+				</if>
+				<if test="type==1 || type==2">
+					AND bml.distance &lt;= 1500
+				</if>
+				GROUP BY
+					bml.lineName
+			) a
+	</select>
+	
+</mapper> 

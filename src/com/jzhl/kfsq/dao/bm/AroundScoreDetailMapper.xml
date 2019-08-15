@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IAroundScoreDetailMapper">
+	
+	<!-- 根据楼盘编号查询教育分数详情 -->
+	<select id="getAroundScoreDetail" parameterType="int" resultType="com.jzhl.kfsq.dataset.bm.AroundScoreDetail">
+		SELECT
+			bmb.buildingId buildingId,
+			bmb.buildingName buildingName,
+			bmb.longitude longitude,
+			bmb.latitude latitude,
+			bmbei.aroundImg aroundImg,
+			ifnull(babs.peripheryScore, 0) peripheryScore,
+			ifnull((
+				SELECT
+					COUNT(memberId)
+				FROM
+					(
+						SELECT
+							*
+						FROM
+							BA_MemberEvaluate
+						WHERE
+							buildingId = #{buildingId}
+						AND dimensionCode = 'around'
+						AND isValid = 1
+						GROUP BY
+							memberId
+					) a
+			), 0) countMember
+		FROM
+			BM_Building bmb
+		LEFT JOIN BM_BuildingExtendImage bmbei ON bmb.buildingId = bmbei.buildingId
+		LEFT JOIN BA_BuildingScore babs ON bmb.buildingId = babs.buildingId
+		WHERE
+			bmb.buildingId = #{buildingId} 
+		AND bmb.isValid = 1
+		AND bmbei.isValid = 1
+		AND babs.isValid = 1
+	</select>
+	
+	<!-- 根据楼盘编号和周边信息类型查询周边信息 -->
+	<select id="findAroundDataSetByBuildingIdAndType" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.AroundScoreDataSet">
+		SELECT
+			aroundId,
+		    unitName,
+		    distance,
+		    longitude,
+		    latitude
+		FROM
+			BM_Around
+		WHERE
+			buildingId = #{buildingId}
+		AND isValid = 1
+		AND type = #{type}
+		AND distance <![CDATA[ <= ]]> 2000
+		GROUP BY 
+			unitName
+		ORDER BY
+			distance
+		LIMIT 10
+	</select>
+	
+	<!-- 根据楼盘编号和环境标签查询周边信息 -->
+	<select id="findAroundDataSetByBuildingIdAndTagType" parameterType="map" resultType="com.jzhl.kfsq.dataset.bm.AroundScoreDataSet">
+		SELECT
+			bma.aroundId aroundId,
+			bma.unitName unitName, 
+			bma.distance distance, 
+			bma.longitude longitude, 
+			bma.latitude latitude
+		FROM
+			BM_Around bma, BM_AroundTag bmat, SM_Tag smt
+		WHERE
+			bma.buildingId = #{buildingId}
+		AND	bma.aroundId = bmat.aroundId
+		AND smt.tagType = #{type}
+		AND bmat.tagId = smt.tagId
+		AND bma.distance <![CDATA[ <= ]]> 2000
+		AND bma.isValid = 1
+		AND bmat.isValid = 1
+		AND smt.isValid = 1
+		ORDER BY
+			smt.ranking, bma.distance
+		LIMIT 10
+	</select>
+		
+</mapper> 

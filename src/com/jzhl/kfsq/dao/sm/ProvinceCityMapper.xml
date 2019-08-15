@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IProvinceCityMapper">
+
+	<resultMap id="smProvincecityResultMap" type="com.jzhl.kfsq.entity.sm.ProvinceCity">
+		<id property="areaId" column="areaId" />
+		<result property="areaName" column="areaName" />
+		<result property="parentAreaId" column="parentAreaId" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="smProvincecityResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="smProvincecityResultMap"></resultMap>
+
+	<!-- 根据父类ID查之类 -->	
+	<select id="findProvinceCityList" parameterType="map" resultMap="pageResultMap">
+	   select 
+	     areaId,
+	     areaName,
+	     parentAreaId,
+	     creatorUserId,
+	     createTime
+	   from SM_ProvinceCity
+	   <where>
+	     <if test="areaId != null">
+	        areaId=#{areaId}
+	     </if>
+	     <if test="areaName != null">
+	        and areaName=#{areaName}
+	     </if>
+	     <if test="parentAreaId != null">
+	        and parentAreaId=#{parentAreaId}
+	     </if>
+	     <if test="creatorUserId != null">
+	        and creatorUserId=#{creatorUserId}
+	     </if>
+	     <if test="createTime != null">
+	        and createTime=#{createTime}
+	     </if>
+	   </where>
+	</select>
+	
+	<!-- 根据父类ID查之类 ;添加代理商时，一个城市只有一个代理商；查询城市列表时，要把已经添加过代理商的城市去除；-->	
+	<select id="findBranchProvinceCityList" parameterType="map" resultMap="pageResultMap">
+	   select 
+	     areaId,
+	     areaName,
+	     parentAreaId,
+	     creatorUserId,
+	     createTime
+	   from SM_ProvinceCity
+	   <where>
+	     areaId not in (select branchCityId from  SM_Branch )
+	     <if test="areaId != null">
+	        and areaId=#{areaId}
+	     </if>
+	     <if test="areaName != null">
+	        and areaName=#{areaName}
+	     </if>
+	     <if test="parentAreaId != null">
+	        and parentAreaId=#{parentAreaId}
+	     </if>
+	     <if test="creatorUserId != null">
+	        and creatorUserId=#{creatorUserId}
+	     </if>
+	     <if test="createTime != null">
+	        and createTime=#{createTime}
+	     </if>
+	   </where>
+	</select>
+	
+	<!-- 根据分站编号查询分站城市信息-->	
+	<select id="getCityByBranchId" parameterType="com.jzhl.kfsq.dto.sm.BranchCityDto" resultType="com.jzhl.kfsq.dataset.sm.CityInfoDataSet">
+	    SELECT
+			p.areaId areaId,
+			p.areaName areaName
+		FROM
+			SM_ProvinceCity p,
+			SM_Branch b
+		WHERE
+			p.areaId = b.branchCityId
+		AND b.branchId = #{branchId}
+	</select>
+	
+</mapper> 

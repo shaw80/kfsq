@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.sm.IBranchCityMapper">
+
+	<resultMap type="com.jzhl.kfsq.entity.sm.BranchCity" id="baseResultMap">
+		<id property="id" column="id" />
+		<result property="branchCityId" column="branchCityId" />
+		<result property="status" column="status" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="updateTime" column="updateTime" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		id,
+		branchCityId,
+		status,
+		updateUserId,
+		updateTime,
+		creatorUserId,
+		createTime
+	</sql>
+	
+	<sql id="tableName">
+        SM_BranchCity
+    </sql>
+    
+    <!-- 开通代理 -->
+	<insert id="insertBranchCity" parameterType="com.jzhl.kfsq.entity.sm.BranchCity">
+	   insert into SM_BranchCity (
+	     <if test="branchCityId != null">
+	     	branchCityId,
+	     </if>
+	     	status,
+	     <if test="creatorUserId != null">
+	     	creatorUserId,
+	     </if>
+	     	createTime
+	   )values (
+	   	 <if test="branchCityId != null">
+	     	#{branchCityId},
+	     </if>
+	     1,
+	     <if test="creatorUserId != null">
+	     	 #{creatorUserId},
+	     </if>
+	     	 now()
+	     )
+	</insert>
+	
+	<!-- 根据分站城市编号查询分站城市中间表信息-->
+	<select id="getBranchCityByBranchId" parameterType="Int" resultMap="baseResultMap">
+		SELECT <include refid="baseColumns" /> 
+		FROM 
+		<include refid="tableName" /> 
+		WHERE 
+		branchCityId = ( SELECT branchCityId FROM SM_Branch WHERE branchId = #{branchId} )
+	</select>
+	
+	<!-- 获取所有开通代理商的城市-->
+	<select id="getBranchCityList" resultType="com.jzhl.kfsq.dataset.sm.BranchCityDataSet">
+		select t1.*, t2.areaName cityName from SM_BranchCity t1 
+			LEFT JOIN SM_ProvinceCity t2 on t1.branchCityId = t2.areaId
+	</select>
+	
+</mapper>

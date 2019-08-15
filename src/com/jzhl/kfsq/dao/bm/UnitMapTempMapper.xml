@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IUnitMapTempMapper">
+
+	<resultMap id="baseResultMap" type="com.jzhl.kfsq.entity.bm.UnitMapTemp">
+		<id property="unitMapId" column="unitMapId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="imgDes" column="imgDes" />
+		<result property="path" column="path" />
+		<result property="sourcePath" column="sourcePath" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="lastSynchronousTime" column="lastSynchronousTime" />
+		<result property="isSynchronous" column="isSynchronous" />
+		<result property="isValid" column="isValid" />
+		<result property="unitMapNo" column="unitMapNo" />
+	</resultMap>
+	
+	<sql id="baseColumns">
+		unitMapId,
+		buildingId,
+		imgDes,
+		path,
+		sourcePath,
+		createTime,
+		updateTime,
+		lastSynchronousTime,
+		isSynchronous,
+		isValid,
+		unitMapNo
+	</sql>
+
+	<insert id="insertUnitMapTemp" parameterType="com.jzhl.kfsq.entity.bm.UnitMapTemp" useGeneratedKeys="true" keyProperty="unitMapId">
+		insert into BM_UnitMapTemp
+		(
+			buildingId,
+			<if test="imgDes != null and imgDes != ''">
+				imgDes,
+			</if>
+			<if test="path != null and path != ''">
+				path,
+			</if>
+			<if test="sourcePath != null and sourcePath != ''">
+				sourcePath,
+			</if>
+			<if test="unitMapNo != null and unitMapNo != ''">
+				unitMapNo,
+			</if>
+			createTime
+		)
+		values
+		(
+			#{buildingId},
+			<if test="imgDes != null and imgDes != ''">
+				#{imgDes},
+			</if>
+			<if test="path != null and path != ''">
+				#{path},
+			</if>
+			<if test="sourcePath != null and sourcePath != ''">
+				#{sourcePath},
+			</if>
+			<if test="unitMapNo != null and unitMapNo != ''">
+				#{unitMapNo},
+			</if>
+			now()
+		)
+	</insert>
+	
+	<select id="findUnitMapTempList" parameterType="com.jzhl.kfsq.entity.bm.UnitMapTemp" resultMap="baseResultMap">
+		select 
+		<include refid="baseColumns" />
+		from
+		BM_UnitMapTemp
+		where 
+		isValid = 1
+		and
+		buildingId = #{buildingId}
+		<if test="isSynchronous != null and isSynchronous != ''">
+			and isSynchronous=#{isSynchronous}
+		</if>
+	</select>
+	
+	<update id="updateUnitMapTemp" parameterType="com.jzhl.kfsq.entity.bm.UnitMapTemp">
+		update
+		BM_UnitMapTemp
+		set
+		<if test="imgDes != null and imgDes != ''">
+			imgDes = #{imgDes},
+		</if>
+		<if test="path != null and path != ''">
+			path = #{path},
+		</if>
+		<if test="sourcePath != null and sourcePath != ''">
+			sourcePath = #{sourcePath},
+		</if>
+		updateTime = now(),
+		isSynchronous = 0
+	</update>
+	
+	<update id="updateUnitMapTempInValid" parameterType="map">
+		update
+		BM_UnitMapTemp
+		set 
+		isValid = 0,
+		isSynchronous = 0,
+		updateTime = now()
+		where
+		unitMapId in
+		<foreach collection="unitMapIds" index="index" item="item" open="(" separator="," close=")">  
+            #{item}   
+    	</foreach>  
+	</update>
+	
+	<update id="updateUnitMapTempSynchronized" parameterType="Integer">
+		update 
+		BM_UnitMapTemp
+		set
+		lastSynchronousTime = now(),
+		isSynchronous = 1
+		where 
+		buildingId = #{buildingId}
+	</update>
+</mapper> 

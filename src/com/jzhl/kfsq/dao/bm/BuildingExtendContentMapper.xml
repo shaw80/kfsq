@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.bm.IBuildingExtendContentMapper">
+
+	<resultMap id="bmBuildingextendcontentResultMap" type="com.jzhl.kfsq.entity.bm.BuildingExtendContent">
+		<id property="contentid" column="contentId" />
+		<result property="buildingId" column="buildingId" />
+		<result property="traffic" column="traffic" />
+		<result property="education" column="education" />
+		<result property="arround" column="arround" />
+		<result property="discount" column="discount" />
+		<result property="creatorUserId" column="creatorUserId" />
+		<result property="updateUserId" column="updateUserId" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="updateTime" />
+		<result property="isValid" column="isValid" />
+	</resultMap>
+	<resultMap id="pageResultMap"  type="java.util.HashMap" extends="bmBuildingextendcontentResultMap"></resultMap>
+	<resultMap id="findResultMap"  type="java.util.HashMap" extends="bmBuildingextendcontentResultMap"></resultMap>
+
+	<!-- 楼盘扩展信息插入 -->
+	<insert id="insertBuildingExtendContent" parameterType="com.jzhl.kfsq.entity.bm.BuildingExtendContent">
+	   insert into BM_BuildingExtendContent (
+	     buildingId,
+	     <if test="traffic != null">
+	     	traffic,
+	     </if>
+	     <if test="education != null">
+	     	education,
+	     </if>
+	     <if test="arround != null">
+	     	arround,
+	     </if>
+	     <if test="discount != null">
+	     	discount,
+	     </if>
+	     creatorUserId,
+	     createTime,
+	     isValid
+	   )values (
+	     #{buildingId},
+	     <if test="traffic != null">
+	     	#{traffic},
+	     </if>
+	     <if test="education != null">
+	     	#{education},
+	     </if>
+	     <if test="arround != null">
+	     	#{arround},
+	     </if>
+	     <if test="discount != null">
+	     	#{discount},
+	     </if>
+	     #{creatorUserId},
+	     now(),
+	     1
+	   )
+	</insert>
+
+	<!-- 更新楼盘扩展信息 -->
+	<update id="updateBuildingExtendContent" parameterType="com.jzhl.kfsq.entity.bm.BuildingExtendContent">
+	   update BM_BuildingExtendContent set
+		   <if test="traffic != null">
+		   		traffic=#{traffic},
+		   </if>
+		   <if test="education != null">
+		   		education=#{education},
+		   </if>
+		   <if test="arround != null">
+		   		arround=#{arround},
+		   </if>
+		   <if test="discount != null">
+		   		discount=#{discount},
+		   </if>
+		   <if test="updateUserId != null">
+		   		updateUserId=#{updateUserId},
+		   </if>
+		     updateTime=now()
+	   where 
+	    	buildingId=#{buildingId} 
+	</update>
+</mapper> 

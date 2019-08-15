@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须指向Dao接口 -->
+<mapper namespace="com.jzhl.kfsq.dao.ba.IBuildingQueryHistoryMapper">
+
+	<resultMap id="baBuildingqueryhistoryResultMap" type="com.jzhl.kfsq.entity.ba.BuildingQueryHistory">
+		<id property="queryId" column="queryId" />
+		<result property="uuId" column="uuId" />
+		<result property="memberId" column="memberId" />
+		<result property="queryString" column="queryString" />
+		<result property="createTime" column="createTime" />
+	</resultMap>
+
+	<!-- 插入数据 -->
+	<insert id="insertBuildingQueryHistory" parameterType="com.jzhl.kfsq.entity.ba.BuildingQueryHistory">
+	   insert into BA_BuildingQueryHistory (
+	     <if test="uuId != null">
+		      uuId,
+	     </if>
+	     <if test="memberId != null">
+		     memberId,
+	     </if>
+	     queryString,
+	     createTime
+	   )values (
+	     <if test="uuId != null">
+		      #{uuId},
+	     </if>
+	     <if test="memberId != null">
+		     #{memberId},
+	     </if>
+	     #{queryString},
+	     now()
+	   )
+	</insert>
+</mapper> 
